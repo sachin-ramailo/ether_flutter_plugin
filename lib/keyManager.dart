@@ -51,9 +51,15 @@ class KeyManagerImpl extends KeyManager {
   Future<String?> getMnemonic() async {
     final version = await methodChannel.invokeMethod<String>('getPlatformVersion');
     printLog('version  = $version');
+
+    String? mnemonic = await methodChannel.invokeMethod<String>("readMnemonic",
+        {
+          "key": kkeyForStoringMnemonic,
+        }
+    );
+    printLog("get mnemonic = $mnemonic");
+
     //TODO: ultimately this has to be done from native code
-    SharedPreferences preferences = await SharedPreferences.getInstance();
-    String? mnemonic = preferences.getString(kkeyForStoringMnemonic);
     printLog("mnemonic = $mnemonic");
     if (isStringEmpty(mnemonic)) {
       mnemonic = generateMnemonic();
@@ -85,6 +91,13 @@ class KeyManagerImpl extends KeyManager {
     if (options == null || !options.saveToCloud) {
       SharedPreferences preferences = await SharedPreferences.getInstance();
       preferences.setString(kkeyForStoringMnemonic, mnemonic);
+      // TODO: don't pass false false
+      await methodChannel.invokeMethod("saveMnemonic",{
+        "key": kkeyForStoringMnemonic,
+        "mnemonic": mnemonic,
+        "useBlockstore": false,
+        "forceBlockstore": false,
+      });
     }
   }
 
