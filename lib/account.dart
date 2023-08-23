@@ -1,6 +1,8 @@
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:convert/convert.dart';
+import 'package:eth_sig_util/util/utils.dart';
 import 'package:flutter_sdk/utils/constants.dart';
 import 'package:flutter_sdk/utils/constants.dart';
 
@@ -60,6 +62,7 @@ class AccountsUtil {
   Future<String?> getAccountAddress() async {
     final wallet = await getWallet();
     printLog('Wallet address = ${wallet.privateKey.address.hex}');
+    printLog("wallet private key = ${wallet.privateKey.privateKeyInt}");
     return wallet.privateKey.address.hex;
   }
 
@@ -107,12 +110,14 @@ class AccountsUtil {
     // return utils.joinSignature(signingKey.signDigest(hash));
   }
 
-  EthPrivateKey getCredentials(String hexCode) {
+  EthPrivateKey getCredentials(Uint8List uint8list) {
+    String hexCode = "0x${bytesToHex(uint8list)}";
+    printLog("Hexcode for private key -> $hexCode");
     return EthPrivateKey.fromHex(hexCode);
   }
 
-  Wallet _makeWalletFromPrivateKey(String pkey) {
-    EthPrivateKey credentials = getCredentials(pkey);
+  Wallet _makeWalletFromPrivateKey(Uint8List uint8list) {
+    EthPrivateKey credentials = getCredentials(uint8list);
 
     //TODO: What is this password?
     final Wallet newWallet =

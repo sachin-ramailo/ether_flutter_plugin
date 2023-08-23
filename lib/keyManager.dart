@@ -14,8 +14,8 @@ abstract class KeyManager {
   Future<String?> generateMnemonic();
   void saveMnemonic(String mnemonic, {KeyStorageConfig? options});
   void deleteMnemonic();
-  Future<String> makePrivateKeyFromMnemonic(String mnemonic);
-  Future<String> getStoredPrivateKey();
+  Future<Uint8List> makePrivateKeyFromMnemonic(String mnemonic);
+  Future<Uint8List> getStoredPrivateKey();
 }
 
 class KeychainAccessibilityConstant {
@@ -65,26 +65,24 @@ class KeyManagerImpl extends KeyManager {
   }
 
   @override
-  Future<String> makePrivateKeyFromMnemonic(String mnemonic) async {
+  Future<Uint8List> makePrivateKeyFromMnemonic(String mnemonic) async {
     //TODO: ultimately this has to be done from native code
     List<Object?>? pvtKey = await methodChannel.invokeMethod<List<Object?>>("getPrivateKeyFromMnemonic",{
       'mnemonic':mnemonic,
     });
-    String strPvtKey = uint8ListToHex(pvtKey!);
-    printLog('pvtKey = ${strPvtKey!}');
-    return strPvtKey;
+    Uint8List privateKey = intListToUint8List(pvtKey!);
+    printLog('pvtKey = ${privateKey!}');
+    return privateKey;
   }
 
-  String uint8ListToHex(List<Object?> uint8List) {
-    Uint8List list = Uint8List.fromList([]);
-    List<int> list1 = [];
-    for(Object? obj in uint8List){
-      list1.add(int.parse(obj.toString()));
+  Uint8List intListToUint8List(List<Object?> intList) {
+    List<int> ints = [];
+    for(Object? obj in intList){
+      ints.add(int.parse(obj.toString()));
     }
-    // Convert the Uint8List to a string of bytes.
-    String bytesString = list1.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join('');
     // Return the string of bytes as a hex string.
-    return '0x$bytesString';
+    Uint8List uInt8List = Uint8List.fromList(ints);
+    return uInt8List;
   }
 
   @override
@@ -104,7 +102,7 @@ class KeyManagerImpl extends KeyManager {
   }
 
   @override
-  Future<String> getStoredPrivateKey() async {
+  Future<Uint8List> getStoredPrivateKey() async {
     String? mnemonic = await getMnemonic();
     return await makePrivateKeyFromMnemonic(mnemonic!);
   }
