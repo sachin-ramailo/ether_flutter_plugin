@@ -2,6 +2,7 @@ package com.rlynetworkmobilesdk
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import androidx.security.crypto.MasterKey.Builder
@@ -11,6 +12,7 @@ import com.google.android.gms.auth.blockstore.DeleteBytesRequest
 import com.google.android.gms.auth.blockstore.RetrieveBytesRequest
 import com.google.android.gms.auth.blockstore.RetrieveBytesResponse
 import com.google.android.gms.auth.blockstore.StoreBytesData
+import kotlin.math.log
 
 class MnemonicStorageHelper(context: Context) {
     private val sharedPreferences: SharedPreferences
@@ -36,8 +38,9 @@ class MnemonicStorageHelper(context: Context) {
         }
     }
 
-    fun save(key: String, mnemonic: String, useBlockstore: Boolean, forceBlockstore: Boolean, onSuccess: () -> Unit, onFailure: (message: String) -> Unit) {
-        if (useBlockstore && isEndToEndEncryptionAvailable) {
+    fun save(key: String, mnemonic: String, useBlockStore: Boolean, forceBlockStore: Boolean, onSuccess: () -> Unit, onFailure: (message: String) -> Unit) {
+        if (useBlockStore && true) {
+            Log.i("memonic_storage", "saving on cloud , because useBlockStore = true and isEndToEndEncryptionAvailable = true")
             val storeRequest = StoreBytesData.Builder()
                 .setBytes(mnemonic.toByteArray(Charsets.UTF_8))
                 .setKey(key)
@@ -46,14 +49,18 @@ class MnemonicStorageHelper(context: Context) {
 
             blockstoreClient.storeBytes(storeRequest.build())
                 .addOnSuccessListener {
+                    Log.i("memonic_storage", "saved on cloud")
                     onSuccess()
                 }.addOnFailureListener { e ->
+                    Log.i("memonic_storage", "failed to save on cloud")
                     onFailure("Failed to save to cloud $e")
                 }
         } else {
-            if (forceBlockstore) {
+            if (forceBlockStore) {
+                Log.i("memonic_storage", "forceBlockStore = true")
                 onFailure("Failed to save mnemonic. No end to end encryption option is available and force cloud is on");
             } else {
+                Log.i("memonic_storage", "saving mnemonic on local")
                 saveToSharedPref(key, mnemonic)
                 onSuccess()
             }
@@ -77,12 +84,16 @@ class MnemonicStorageHelper(context: Context) {
                 val blockstoreDataMap = result.blockstoreDataMap
 
                 if (blockstoreDataMap.isEmpty()) {
+                    Log.i("memonic_storage", "got empty from block store, reading from shared prefs")
                     val mnemonic = readFromSharedPref(key)
                     onSuccess(mnemonic)
                 } else {
                     val mnemonic = blockstoreDataMap[key]
+                    Log.i("memonic_storage", "got non-empty from block store")
                     if (mnemonic !== null) {
-                        onSuccess(mnemonic.bytes.toString(Charsets.UTF_8))
+                        val strMnemonic = mnemonic.bytes.toString(Charsets.UTF_8)
+                        Log.i("memonic_storage", "got non-empty from block store $strMnemonic")
+                        onSuccess(strMnemonic)
                     } else {
                         onSuccess(null)
                     }

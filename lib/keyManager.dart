@@ -37,14 +37,13 @@ class KeyManagerImpl extends KeyManager {
 
   @override
   void deleteMnemonic() {
-    // TODO: implement deleteMnemonic
-    throw UnimplementedError();
+    methodChannel.invokeMethod<bool>("deleteMnemonic");
   }
 
   @override
   Future<String?> generateMnemonic() async {
     String? mnemonic = await methodChannel.invokeMethod<String>("generateNewMnemonic");
-    printLog("get mnemonic = $mnemonic");
+    printLog("generate mnemonic tested = $mnemonic");
     saveMnemonic(mnemonic!);
     return mnemonic;
   }
@@ -89,14 +88,11 @@ class KeyManagerImpl extends KeyManager {
   Future<void> saveMnemonic(String mnemonic,
       {KeyStorageConfig? options}) async {
     if (options == null || !options.saveToCloud) {
-      SharedPreferences preferences = await SharedPreferences.getInstance();
-      preferences.setString(kkeyForStoringMnemonic, mnemonic);
-      // TODO: don't pass false false
+      // TODO: don't pass true,true. Give option to users to select
       await methodChannel.invokeMethod("saveMnemonic",{
-        "key": kkeyForStoringMnemonic,
         "mnemonic": mnemonic,
-        "useBlockstore": false,
-        "forceBlockstore": false,
+        "useBlockStore": true,
+        "forceBlockStore": true,
       });
     }
   }

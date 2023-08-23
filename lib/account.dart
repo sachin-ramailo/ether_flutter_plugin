@@ -45,7 +45,7 @@ class AccountsUtil {
     }
 
     final mnemonic = await _keyManager.getMnemonic();
-    printLog('mnemonic = $mnemonic');
+    printLog('get mnemonic tested = $mnemonic');
 
     if (mnemonic == null) {
       throw "Mnemonic can't be null...";

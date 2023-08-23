@@ -2,6 +2,7 @@ package com.savez.flutter_sdk
 
 import androidx.annotation.NonNull
 import com.rlynetworkmobilesdk.EncryptedSharedPreferencesHelper
+import com.rlynetworkmobilesdk.MnemonicStorageHelper
 import org.kethereum.bip39.generateMnemonic
 import org.kethereum.bip39.validate
 import org.kethereum.bip39.dirtyPhraseToMnemonicWords
@@ -20,7 +21,7 @@ import java.util.Locale
 /** FlutterSdkPlugin */
 const val MNEMONIC_STORAGE_KEY = "BIP39_MNEMONIC"
 class FlutterSdkPlugin: FlutterPlugin, MethodCallHandler {
-  private lateinit var prefHelper: EncryptedSharedPreferencesHelper
+  private lateinit var mnemonicHelper: MnemonicStorageHelper
   private val MNEMONIC_PREFERENCE_KEY = "BIP39_MNEMONIC"
 
   /// The MethodChannel that will the communication between Flutter and native Android
@@ -29,12 +30,11 @@ class FlutterSdkPlugin: FlutterPlugin, MethodCallHandler {
   /// when the Flutter Engine is detached from the Activity
   private lateinit var channel: MethodChannel
   private lateinit var flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
-
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_sdk")
     channel.setMethodCallHandler(this)
     this.flutterPluginBinding = flutterPluginBinding
-    prefHelper = EncryptedSharedPreferencesHelper(flutterPluginBinding.applicationContext)
+    mnemonicHelper = MnemonicStorageHelper(flutterPluginBinding.applicationContext)
   }
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
@@ -65,8 +65,9 @@ class FlutterSdkPlugin: FlutterPlugin, MethodCallHandler {
   }
 
   private fun getMnemonic(result: Result) {
-    val mnemonic = prefHelper.read(MNEMONIC_PREFERENCE_KEY)
-    result.success(mnemonic)
+    mnemonicHelper.read(MNEMONIC_STORAGE_KEY) { mnemonic: String? ->
+      result.success(mnemonic)
+    }
   }
 
   private fun generateNewMnemonic(result: Result){
@@ -75,16 +76,21 @@ class FlutterSdkPlugin: FlutterPlugin, MethodCallHandler {
   }
 
   private fun saveMnemonic(call: MethodCall, result: Result) {
-    call.argument<String?>("mnemonic")?.let { mnemonic ->
-      if (!MnemonicWords(mnemonic).validate(WORDLIST_ENGLISH)) {
-        result.error("mnemonic_verification_failure", "Mnemonic is not valid", null)
-      }
-      prefHelper.save(MNEMONIC_PREFERENCE_KEY, mnemonic)
-      result.success(true)
+    val mnemonic = call.argument<String>("mnemonic") ?: ""
+    val useBlockStore = call.argument<Boolean>("useBlockStore")?: false
+    val forceBlockStore = call.argument<Boolean>("forceBlockStore")?: false
+
+    if (!MnemonicWords(mnemonic).validate(WORDLIST_ENGLISH)) {
+      result.error("mnemonic_verification_failure", "Mnemonic is not valid", null)
     }
+    mnemonicHelper.save(MNEMONIC_STORAGE_KEY, mnemonic, useBlockStore, forceBlockStore, { ->
+      result.success(true)
+    }, { message: String ->
+      result.error("mnemonic_save_failure", message, null)
+    })
   }
   private fun deleteMnemonic(result: Result) {
-    prefHelper.delete(MNEMONIC_PREFERENCE_KEY)
+    mnemonicHelper.delete(MNEMONIC_STORAGE_KEY)
     result.success(true)
   }
 
