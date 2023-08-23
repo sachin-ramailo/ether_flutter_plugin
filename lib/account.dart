@@ -27,8 +27,8 @@ class AccountsUtil {
       throw 'Account already exists';
     }
 
-    final mnemonic = _keyManager.generateMnemonic();
-    _keyManager.saveMnemonic(mnemonic);
+    final mnemonic = await _keyManager.generateMnemonic();
+    _keyManager.saveMnemonic(mnemonic!);
     final pkey = await _keyManager.makePrivateKeyFromMnemonic(mnemonic);
     final newWallet = _makeWalletFromPrivateKey(pkey);
 

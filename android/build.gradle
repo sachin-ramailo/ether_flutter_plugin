@@ -6,6 +6,7 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://jitpack.io' }
     }
 
     dependencies {
@@ -26,7 +27,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 android {
-    compileSdk 31
+    compileSdkVersion 31
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -43,32 +44,22 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 23
+        minSdkVersion 16
     }
 
     dependencies {
         testImplementation 'org.jetbrains.kotlin:kotlin-test'
         testImplementation 'org.mockito:mockito-core:5.0.0'
-
-        implementation "com.github.komputing.kethereum:model:0.85.7"
-        implementation "com.github.komputing.kethereum:extensions_kotlin:0.85.7"
-        implementation "com.github.komputing.kethereum:bip39:0.85.7"
-        implementation 'com.github.komputing.kethereum:bip39_wordlist_en:0.85.7'
-        implementation "com.github.komputing.kethereum:bip32:0.85.7"
-        implementation "com.github.komputing.kethereum:crypto_impl_spongycastle:0.85.7"
-        implementation 'androidx.security:security-crypto-ktx:1.1.0-alpha03'
-        implementation 'com.google.android.gms:play-services-auth-blockstore:16.2.0'
+        implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     }
+}
 
-    testOptions {
-        unitTests.all {
-            useJUnitPlatform()
-
-            testLogging {
-               events "passed", "skipped", "failed", "standardOut", "standardError"
-               outputs.upToDateWhen {false}
-               showStandardStreams = true
-            }
-        }
-    }
+dependencies {
+    implementation "com.github.komputing.kethereum:model:0.85.7"
+    implementation "com.github.komputing.kethereum:extensions_kotlin:0.85.7"
+    implementation "com.github.komputing.kethereum:bip39:0.85.7"
+    implementation 'com.github.komputing.kethereum:bip39_wordlist_en:0.85.7'
+    implementation "com.github.komputing.kethereum:bip32:0.85.7"
+    implementation "com.github.komputing.kethereum:crypto_impl_spongycastle:0.85.7"
+    implementation 'androidx.security:security-crypto-ktx:1.1.0-alpha03'
 }

@@ -1,8 +1,6 @@
 package com.savez.flutter_sdk
 
-import android.content.Context
 import androidx.annotation.NonNull
-import androidx.security.crypto.MasterKey
 import com.rlynetworkmobilesdk.EncryptedSharedPreferencesHelper
 import org.kethereum.bip39.generateMnemonic
 import org.kethereum.bip39.validate
@@ -10,18 +8,14 @@ import org.kethereum.bip39.dirtyPhraseToMnemonicWords
 import org.kethereum.bip39.toSeed
 import org.kethereum.bip39.wordlists.WORDLIST_ENGLISH
 import org.kethereum.bip39.model.MnemonicWords
-import org.kethereum.bip32.model.ExtendedKey
 import org.kethereum.bip32.toKey
-import org.kethereum.extensions.*
-import java.lang.Integer.parseInt
-
-import com.rlynetworkmobilesdk.MnemonicStorageHelper
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import java.util.Locale
 
 /** FlutterSdkPlugin */
 const val MNEMONIC_STORAGE_KEY = "BIP39_MNEMONIC"
@@ -45,34 +39,39 @@ class FlutterSdkPlugin: FlutterPlugin, MethodCallHandler {
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
 
-    if (call.method == "getPlatformVersion") {
-      result.success("Android ${android.os.Build.VERSION.RELEASE}")
-    }
-    if (call.method == "saveMnemonic") {
-      saveMnemonic(call, result);
-    } else if (call.method == "readMnemonic") {
-      readMnemonic(call, result)
-    } else if (call.method == "deleteMnemonic") {
-      deleteMnemonic(call, result)
-    } else if (call.method == "generateMnemonic") {
-      val phrase = generateMnemonic(192, WORDLIST_ENGLISH)
-      result.success(phrase)
-    } else {
-      result.notImplemented()
+    when (call.method) {
+        "getPlatformVersion" -> {
+          result.success("Android ${android.os.Build.VERSION.RELEASE}")
+        }
+        "saveMnemonic" -> {
+          saveMnemonic(call, result);
+        }
+        "getMnemonic" -> {
+          getMnemonic(result)
+        }
+        "deleteMnemonic" -> {
+          deleteMnemonic(result)
+        }
+        "generateNewMnemonic" -> {
+          generateNewMnemonic(result)
+        }
+        "getPrivateKeyFromMnemonic" -> {
+          getPrivateKeyFromMnemonic(call,result)
+        }
+        else -> {
+          result.notImplemented()
+        }
     }
   }
 
-  private fun deleteMnemonic(call: MethodCall, result: Result) {
-    val key = call.argument<String?>("key") ?: "null"
-    val mnemonicStorageHelper = MnemonicStorageHelper(flutterPluginBinding.applicationContext)
-    mnemonicStorageHelper.delete(key);
+  private fun getMnemonic(result: Result) {
+    val mnemonic = prefHelper.read(MNEMONIC_PREFERENCE_KEY)
+    result.success(mnemonic)
   }
 
-  private fun readMnemonic(call: MethodCall, result: Result) {
-    val mnemonicStorageHelper = MnemonicStorageHelper(flutterPluginBinding.applicationContext)
-    mnemonicStorageHelper.read(MNEMONIC_STORAGE_KEY, onSuccess = { value ->
-      result.success(value)
-    })
+  private fun generateNewMnemonic(result: Result){
+    val phrase = generateMnemonic(192, WORDLIST_ENGLISH)
+    result.success(phrase)
   }
 
   private fun saveMnemonic(call: MethodCall, result: Result) {
@@ -82,6 +81,31 @@ class FlutterSdkPlugin: FlutterPlugin, MethodCallHandler {
       }
       prefHelper.save(MNEMONIC_PREFERENCE_KEY, mnemonic)
       result.success(true)
+    }
+  }
+  private fun deleteMnemonic(result: Result) {
+    prefHelper.delete(MNEMONIC_PREFERENCE_KEY)
+    result.success(true)
+  }
+
+  private fun getPrivateKeyFromMnemonic(call: MethodCall, result: Result){
+    call.argument<String?>("mnemonic")?.let { mnemonic ->
+      if (!MnemonicWords(mnemonic).validate(WORDLIST_ENGLISH)) {
+        result.error("mnemonic_verification_failure", "mnemonic failed to pass check",null);
+      }
+
+      val words = dirtyPhraseToMnemonicWords(mnemonic)
+      val seed = words.toSeed()
+      val key = seed.toKey("m/44'/60'/0'/0/0")
+
+      val privateKey = key.keyPair.privateKey.key.toByteArray()
+
+      var intsList = mutableListOf<Int>()
+      // and 0xFF fixes twos complement integer representation and
+      // ensures unsigned int values pass through since
+      // we cannot directly cast bytes to unsigned int
+      privateKey.forEach { intsList.add(it.toInt() and 0xFF) }
+      result.success(intsList)
     }
   }
 
