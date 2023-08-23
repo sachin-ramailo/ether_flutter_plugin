@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 
+
 public class FlutterSdkPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "flutter_sdk", binaryMessenger: registrar.messenger())
@@ -12,6 +13,10 @@ public class FlutterSdkPlugin: NSObject, FlutterPlugin {
     switch call.method {
     case "getPlatformVersion":
       result("iOS " + UIDevice.current.systemVersion)
+    case "generateNewMnemonic":
+      result(RlyNetworkMobileSdk.standard.generateMnemonic())
+    case "getMnemonic":
+      result(RlyNetworkMobileSdk.standard.getMnemonic())
     default:
       result(FlutterMethodNotImplemented)
     }
