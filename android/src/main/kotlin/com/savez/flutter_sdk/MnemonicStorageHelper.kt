@@ -5,7 +5,12 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import androidx.security.crypto.MasterKey.Builder
-import com.google.android.gms.auth.blockstore.*
+import com.google.android.gms.auth.blockstore.Blockstore
+import com.google.android.gms.auth.blockstore.BlockstoreClient
+import com.google.android.gms.auth.blockstore.DeleteBytesRequest
+import com.google.android.gms.auth.blockstore.RetrieveBytesRequest
+import com.google.android.gms.auth.blockstore.RetrieveBytesResponse
+import com.google.android.gms.auth.blockstore.StoreBytesData
 
 class MnemonicStorageHelper(context: Context) {
     private val sharedPreferences: SharedPreferences
