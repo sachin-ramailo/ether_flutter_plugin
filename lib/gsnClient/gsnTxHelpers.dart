@@ -222,10 +222,15 @@ import 'EIP712/typedSigning.dart';
     //TODO:-> following code is inspired from getFeeData method of
     //abstract-provider of ethers js library
     //test if it exactly replicates the functions of getFeeData
-    final EtherAmount gasPrice = await client.getGasPrice();
+
+    BlockInformation blockInformation = await client.getBlockInformation();
     final BigInt maxPriorityFeePerGas = BigInt.parse("1500000000");
-    final maxFeePerGas =
-        gasPrice.getInWei * BigInt.from(2) + (maxPriorityFeePerGas);
+    BigInt? maxFeePerGas;
+    if(blockInformation.baseFeePerGas != null){
+      maxFeePerGas =
+          blockInformation.baseFeePerGas!.getInWei * BigInt.from(2) + (maxPriorityFeePerGas);
+    }
+
     final gsnTx = GsnTransactionDetails(
       from: account.privateKey.address.toString(),
       data: tx1.toString(),
