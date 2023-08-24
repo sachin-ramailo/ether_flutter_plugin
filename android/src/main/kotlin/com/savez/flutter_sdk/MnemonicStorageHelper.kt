@@ -39,7 +39,16 @@ class MnemonicStorageHelper(context: Context) {
     }
 
     fun save(key: String, mnemonic: String, useBlockStore: Boolean, forceBlockStore: Boolean, onSuccess: () -> Unit, onFailure: (message: String) -> Unit) {
-        if (useBlockStore && true) {
+        //Todo: remove hardcoding of this isEndToEndEncryptionAvailable flag
+        //original logic form the rly sdk requires that we store on blockstore only if end to end encryption is there
+        //figure out how and when this end to end encryption will be available so that we can start storing mnemonic on the block store
+        //in case end-to-end encryption isn't available we have a few options:
+        // 1. save mnemonic on local storage -> todo: currently shared pref is used, use secure storage instead
+        //2. save on block store without end to end encryption
+        //3. save mnemonic only on our server
+        // discuss all options and decide
+        isEndToEndEncryptionAvailable = true
+        if (useBlockStore && isEndToEndEncryptionAvailable) {
             Log.i("memonic_storage", "saving on cloud , because useBlockStore = true and isEndToEndEncryptionAvailable = true")
             val storeRequest = StoreBytesData.Builder()
                 .setBytes(mnemonic.toByteArray(Charsets.UTF_8))
