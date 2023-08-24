@@ -35,8 +35,6 @@ class NetworkImpl extends Network{
     final ethers = getEthClient();
 
     final claimTx = await getClaimTx(account, network, ethers);
-    //TODO: Fix this
-    // final claimTx = null;
 
     return relay(claimTx);
   }
