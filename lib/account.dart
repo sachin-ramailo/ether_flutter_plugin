@@ -118,6 +118,7 @@ class AccountsUtil {
 
   Wallet _makeWalletFromPrivateKey(Uint8List uint8list) {
     EthPrivateKey credentials = getCredentials(uint8list);
+    printLog('credentials => 0x${bytesToHex(credentials.privateKey)}');
 
     //TODO: What is this password?
     final Wallet newWallet =
