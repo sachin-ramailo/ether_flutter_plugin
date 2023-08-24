@@ -56,7 +56,7 @@ import 'EIP712/typedSigning.dart';
       gtxDataNonZero,
       gtxDataZero,
     );
-    final adjustedGas = BigInt.parse(originalGas!) - BigInt.from(callDataCost);
+    final adjustedGas = BigInt.parse(originalGas!,radix: 16) - BigInt.from(callDataCost);
 
     return '0x${adjustedGas.toRadixString(16)}';
   }
@@ -210,13 +210,11 @@ import 'EIP712/typedSigning.dart';
       EthereumAddress.fromHex(config.contracts.tokenFaucet),
     );
 
-
-    final fn = faucet.function('claim');
-
-    final tx1 = client.call(contract: faucet, function: fn, params: []);
+    final tx = faucet.function('claim').encodeCall([]);
     final gas = await client.estimateGas(
       sender: account.privateKey.address,
-      // data: tx,
+      data: tx,
+      to: faucet.address,
     );
 
     //TODO:-> following code is inspired from getFeeData method of
@@ -233,12 +231,12 @@ import 'EIP712/typedSigning.dart';
 
     final gsnTx = GsnTransactionDetails(
       from: account.privateKey.address.toString(),
-      data: tx1.toString(),
+      data: bytesToHex(tx),
       value: EtherAmount.zero().toString(),
       to: faucet.address.hex,
-      gas: gas.toString(),
-      maxFeePerGas: maxFeePerGas.toString(),
-      maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+      gas: gas.toRadixString(16),
+      maxFeePerGas: maxFeePerGas!.toRadixString(16),
+      maxPriorityFeePerGas: maxPriorityFeePerGas.toRadixString(16),
     );
 
     return gsnTx;

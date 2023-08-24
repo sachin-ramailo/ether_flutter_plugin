@@ -11,7 +11,7 @@ class GsnTransactionDetails {
   // users address
   final String from;
   // tx data
-  final String data;
+  final PrefixedHexString data;
   //contract address
   final String to;
 
