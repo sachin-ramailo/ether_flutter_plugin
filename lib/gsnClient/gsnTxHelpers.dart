@@ -24,7 +24,7 @@ import 'EIP712/typedSigning.dart';
 
   CalldataBytes calculateCalldataBytesZeroNonzero(String calldata) {
     final calldataBuf =
-        Uint8List.fromList(convertLib.hex.decode(calldata.substring(2)));
+        Uint8List.fromList(convertLib.hex.decode(calldata));
     int calldataZeroBytes = 0;
     int calldataNonzeroBytes = 0;
 
@@ -62,7 +62,7 @@ import 'EIP712/typedSigning.dart';
   }
 
   Future<String> estimateCalldataCostForRequest(
-      RelayRequest relayRequestOriginal, GSNConfig config) async {
+      RelayRequest relayRequestOriginal, GSNConfig config,Web3Client client) async {
     // Protecting the original object from temporary modifications done here
     var relayRequest = RelayRequest(
       request: ForwardRequest(
@@ -83,7 +83,7 @@ import 'EIP712/typedSigning.dart';
         paymaster: relayRequestOriginal.relayData.paymaster,
         paymasterData:
             '0x${List.filled(config.maxPaymasterDataLength, 'ff').join()}',
-        clientId: '0xffffffffff',
+        clientId: relayRequestOriginal.relayData.clientId,
         forwarder: relayRequestOriginal.relayData.forwarder,
       ),
     );
@@ -103,36 +103,38 @@ import 'EIP712/typedSigning.dart';
     //which will be used further in the code
     //for ex: here is is used in calculated the gas estimate in the next step
 
-    final function = relayHub.function('relayHub');
+    final function = relayHub.function('relayCall');
 
-    final tx =  Transaction.callContract(contract: relayHub, function: function, parameters: [ config.domainSeparatorName, maxAcceptanceBudget, relayRequestJson, signature,  approvalData]);
-    if (tx == null || tx.data == null ||tx.data!.isEmpty) {
+    // final tx =  Transaction.callContract(contract: relayHub, function: function, parameters: [ config.domainSeparatorName, maxAcceptanceBudget, relayRequestJson, signature,  approvalData]);
+    final tx = await client.call(contract: relayHub, function: function, params: [
+      config.domainSeparatorName,
+      maxAcceptanceBudget, relayRequestJson,
+      signature, approvalData]);
+
+    if (tx == null) {
       throw 'tx not populated';
     }
-
 
     //todo: is the calculation of call data cost(from the rly sdk gsnTxHelper file)
     //similar to the estimate gas here?
     //TODO: remove this to string from next line
-    return BigInt.from(calculateCalldataCost(tx.data.toString(), config.gtxDataNonZero, config.gtxDataZero)).toString();
+    return BigInt.from(calculateCalldataCost(tx.toString(), config.gtxDataNonZero, config.gtxDataZero)).toRadixString(16);
   }
 
   Future<String> getSenderNonce(EthereumAddress sender,
       EthereumAddress forwarderAddress, Web3Client client) async {
-    final forwarder = forwarderContractGetNonceFunction(forwarderAddress);
+    final forwarder = iForwarderContract(forwarderAddress);
 
     final List<dynamic> result = await client.call(
       contract: forwarder,
       function: forwarder.function("getNonce"),
       params: [sender],
     );
-
-    // TODO:- info explainer
     // Extract the nonce value from the result and convert it to a string
     // if you go to getNonce method of IForwarderData.dart
     //there is only one output defined in the getNonce method
     //that's why we can be sure that result[0] will be used here
-    final nonce = (result[0] as BigInt).toString();
+    final nonce = result.first.toString();
     return nonce;
   }
 
@@ -194,7 +196,7 @@ import 'EIP712/typedSigning.dart';
 
     final hash = keccak256(AbiUtil.rawEncode(types, parameters));
     final rawRelayRequestId = hex.encode(hash).padLeft(64, '0');
-    final prefixSize = 8;
+    const prefixSize = 8;
     final prefixedRelayRequestId = rawRelayRequestId.replaceFirst(
         RegExp('^.{$prefixSize}'), '0' * prefixSize);
     return '0x$prefixedRelayRequestId';

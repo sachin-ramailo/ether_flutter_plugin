@@ -1,5 +1,5 @@
-String getIForwarderABIData() {
-  return '''[
+List<Map<String, Object>> getIForwarderABIData() {
+  return [
     {
       "anonymous": false,
       "inputs": [
@@ -159,5 +159,5 @@ String getIForwarderABIData() {
       "stateMutability": "nonpayable",
       "type": "function"
     }
-  ]''';
+  ];
 }
