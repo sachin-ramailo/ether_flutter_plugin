@@ -6,6 +6,7 @@ import 'package:convert/convert.dart';
 import 'package:eth_sig_util/eth_sig_util.dart';
 import 'package:flutter_sdk/contracts/tokenFaucet.dart';
 import 'package:flutter_sdk/gsnClient/ABI/IForwarder.dart';
+import 'package:flutter_sdk/utils/constants.dart';
 import 'package:web3dart/crypto.dart';
 
 import 'package:flutter_sdk/gsnClient/ABI/IRelayHub.dart';
@@ -22,9 +23,9 @@ import 'EIP712/typedSigning.dart';
 
 
 
-  CalldataBytes calculateCalldataBytesZeroNonzero(String calldata) {
+  CalldataBytes calculateCalldataBytesZeroNonzero(Uint8List calldata) {
     final calldataBuf =
-        Uint8List.fromList(convertLib.hex.decode(calldata));
+        calldata;
     int calldataZeroBytes = 0;
     int calldataNonzeroBytes = 0;
 
@@ -36,7 +37,7 @@ import 'EIP712/typedSigning.dart';
   }
 
   int calculateCalldataCost(
-    String msgData,
+    Uint8List msgData,
     int gtxDataNonZero,
     int gtxDataZero,
   ) {
@@ -88,7 +89,8 @@ import 'EIP712/typedSigning.dart';
       ),
     );
 
-    const maxAcceptanceBudget = '0xffffffffff';
+    // const maxAcceptanceBudget = 0xffffffffff;
+    final maxAcceptanceBudget = BigInt.from(12345);
     final signature = '0x${List.filled(65, 'ff').join()}';
     final approvalData =
         '0x${List.filled(config.maxApprovalDataLength, 'ff').join()}';
@@ -96,20 +98,14 @@ import 'EIP712/typedSigning.dart';
     final relayHub = relayHubContract(config.relayHubAddress);
     // Estimate the gas cost for the relayCall function call
 
-    var relayRequestJson = jsonEncode(relayRequest.toJson());
-    //todo: -> at other places in other files too, whereever there is a
-    //function called on populateTransation field(in the rly sdk), instead of calling that
-    //function itself(in dart files),we have to use this encodeCall to make a callable obejct
-    //which will be used further in the code
-    //for ex: here is is used in calculated the gas estimate in the next step
+    var relayRequestJson = relayRequest.toJson();
 
     final function = relayHub.function('relayCall');
-
-    // final tx =  Transaction.callContract(contract: relayHub, function: function, parameters: [ config.domainSeparatorName, maxAcceptanceBudget, relayRequestJson, signature,  approvalData]);
-    final tx = await client.call(contract: relayHub, function: function, params: [
+    final tx = await client.call(contract: relayHub, function: function,
+        params: [
       config.domainSeparatorName,
       maxAcceptanceBudget, relayRequestJson,
-      signature, approvalData]);
+      hexToBytes(signature), hexToBytes(approvalData)]);
 
     if (tx == null) {
       throw 'tx not populated';
@@ -118,7 +114,7 @@ import 'EIP712/typedSigning.dart';
     //todo: is the calculation of call data cost(from the rly sdk gsnTxHelper file)
     //similar to the estimate gas here?
     //TODO: remove this to string from next line
-    return BigInt.from(calculateCalldataCost(tx.toString(), config.gtxDataNonZero, config.gtxDataZero)).toRadixString(16);
+    return BigInt.from(calculateCalldataCost(tx as Uint8List, config.gtxDataNonZero, config.gtxDataZero)).toRadixString(16);
   }
 
   Future<String> getSenderNonce(EthereumAddress sender,
@@ -231,10 +227,13 @@ import 'EIP712/typedSigning.dart';
           blockInformation.baseFeePerGas!.getInWei * BigInt.from(2) + (maxPriorityFeePerGas);
     }
 
+
+    Uint8List data = tx;
+    printLog("transaction data = $data");
     final gsnTx = GsnTransactionDetails(
       from: account.privateKey.address.toString(),
-      data: bytesToHex(tx),
-      value: EtherAmount.zero().toString(),
+      data: data,
+      value: "0",
       to: faucet.address.hex,
       gas: gas.toRadixString(16),
       maxFeePerGas: maxFeePerGas!.toRadixString(16),
@@ -311,4 +310,7 @@ class CalldataBytes {
   final int calldataNonzeroBytes;
 
   CalldataBytes(this.calldataZeroBytes, this.calldataNonzeroBytes);
+}
+String uint8ListToHex(Uint8List list) {
+  return '0x${hex.encode(list)}';
 }

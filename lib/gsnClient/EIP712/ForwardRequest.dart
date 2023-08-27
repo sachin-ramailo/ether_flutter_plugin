@@ -1,3 +1,7 @@
+import 'dart:typed_data';
+
+import 'package:web3dart/credentials.dart';
+
 import '../utils.dart';
 
 class ForwardRequest {
@@ -6,7 +10,7 @@ class ForwardRequest {
   IntString value;
   IntString gas;
   IntString nonce;
-  PrefixedHexString data;
+  Uint8List data;
   IntString validUntilTime;
 
   ForwardRequest({
@@ -18,15 +22,13 @@ class ForwardRequest {
     required this.data,
     required this.validUntilTime,
   });
-  Map<String, dynamic> toJson() {
-    return {
-      'from': from,
-      'to': to,
-      'value': value,
-      'gas': gas,
-      'nonce': nonce,
-      'data': data,
-      'validUntilTime': validUntilTime,
-    };
+  List<dynamic> toJson() {
+    return
+      [EthereumAddress.fromHex(from)
+        ,EthereumAddress.fromHex(to),
+    BigInt.parse(value),
+    BigInt.parse(gas),BigInt.parse(nonce),
+        data,
+        BigInt.parse(validUntilTime)];
   }
 }

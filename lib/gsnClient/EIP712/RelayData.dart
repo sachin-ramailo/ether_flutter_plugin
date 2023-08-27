@@ -1,3 +1,6 @@
+import 'package:eth_sig_util/util/utils.dart';
+import 'package:web3dart/credentials.dart';
+
 import '../utils.dart';
 
 class RelayData {
@@ -6,9 +9,9 @@ class RelayData {
   IntString transactionCalldataGasUsed;
   Address relayWorker;
   Address paymaster;
+  Address forwarder;
   PrefixedHexString paymasterData;
   IntString clientId;
-  Address forwarder;
 
   RelayData({
     required this.maxFeePerGas,
@@ -16,21 +19,22 @@ class RelayData {
     required this.transactionCalldataGasUsed,
     required this.relayWorker,
     required this.paymaster,
+    required this.forwarder,
     required this.paymasterData,
     required this.clientId,
-    required this.forwarder,
   });
 
-  Map<String, dynamic> toJson() {
-    return {
-      'maxFeePerGas': maxFeePerGas,
-      'maxPriorityFeePerGas': maxPriorityFeePerGas,
-      'transactionCalldataGasUsed': transactionCalldataGasUsed,
-      'relayWorker': relayWorker,
-      'paymaster': paymaster,
-      'paymasterData': paymasterData,
-      'clientId': clientId,
-      'forwarder': forwarder,
-    };
+  List<dynamic> toJson() {
+    return [
+      BigInt.parse(maxFeePerGas),
+       BigInt.parse(maxPriorityFeePerGas),
+       BigInt.parse(transactionCalldataGasUsed),
+       EthereumAddress.fromHex(relayWorker),
+      EthereumAddress.fromHex(paymaster),
+      EthereumAddress.fromHex(forwarder),
+      hexToBytes(paymasterData),
+      BigInt.parse(clientId),
+
+    ];
   }
 }
