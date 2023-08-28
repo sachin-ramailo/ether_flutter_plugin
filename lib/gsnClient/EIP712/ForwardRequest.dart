@@ -23,12 +23,14 @@ class ForwardRequest {
     required this.validUntilTime,
   });
   List<dynamic> toJson() {
-    return
-      [EthereumAddress.fromHex(from)
-        ,EthereumAddress.fromHex(to),
-    BigInt.parse(value),
-    BigInt.parse(gas),BigInt.parse(nonce),
-        data,
-        BigInt.parse(validUntilTime)];
+    return [
+      EthereumAddress.fromHex(from),
+      EthereumAddress.fromHex(to),
+      BigInt.parse(value),
+      BigInt.parse(gas),
+      BigInt.parse(nonce),
+      data,
+      BigInt.parse(validUntilTime)
+    ];
   }
 }

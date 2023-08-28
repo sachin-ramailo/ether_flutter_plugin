@@ -106,8 +106,9 @@ import 'EIP712/typedSigning.dart';
           config.domainSeparatorName,
           BigInt.parse(maxAcceptanceBudget.substring(2), radix: 16),
           relayRequestJson,
-          Uint8List.fromList(hex.decode(signature.substring(2))),
-          Uint8List.fromList(hex.decode(approvalData.substring(2)))]);
+          hexToBytes(signature),
+          hexToBytes(approvalData)
+        ]);
 
     if (tx == null) {
       throw 'tx not populated';

@@ -27,9 +27,9 @@ class RelayData {
   List<dynamic> toJson() {
     return [
       BigInt.parse(maxFeePerGas),
-       BigInt.parse(maxPriorityFeePerGas),
-       BigInt.parse(transactionCalldataGasUsed),
-       EthereumAddress.fromHex(relayWorker),
+      BigInt.parse(maxPriorityFeePerGas),
+      BigInt.parse(transactionCalldataGasUsed),
+      EthereumAddress.fromHex(relayWorker),
       EthereumAddress.fromHex(paymaster),
       EthereumAddress.fromHex(forwarder),
       hexToBytes(paymasterData),
@@ -37,4 +37,6 @@ class RelayData {
 
     ];
   }
+
+
 }
