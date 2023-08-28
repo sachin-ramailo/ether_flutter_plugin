@@ -89,8 +89,8 @@ import 'EIP712/typedSigning.dart';
       ),
     );
 
-    // const maxAcceptanceBudget = 0xffffffffff;
-    final maxAcceptanceBudget = BigInt.from(12345);
+    const maxAcceptanceBudget = "0xffffffffff";
+    // final maxAcceptanceBudget = BigInt.from(12345);
     final signature = '0x${List.filled(65, 'ff').join()}';
     final approvalData =
         '0x${List.filled(config.maxApprovalDataLength, 'ff').join()}';
@@ -103,9 +103,11 @@ import 'EIP712/typedSigning.dart';
     final function = relayHub.function('relayCall');
     final tx = await client.call(contract: relayHub, function: function,
         params: [
-      config.domainSeparatorName,
-      maxAcceptanceBudget, relayRequestJson,
-      hexToBytes(signature), hexToBytes(approvalData)]);
+          config.domainSeparatorName,
+          BigInt.parse(maxAcceptanceBudget.substring(2), radix: 16),
+          relayRequestJson,
+          Uint8List.fromList(hex.decode(signature.substring(2))),
+          Uint8List.fromList(hex.decode(approvalData.substring(2)))]);
 
     if (tx == null) {
       throw 'tx not populated';
