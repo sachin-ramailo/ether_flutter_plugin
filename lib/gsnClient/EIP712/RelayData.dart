@@ -38,5 +38,17 @@ class RelayData {
     ];
   }
 
+  Map<dynamic,dynamic> toMap(){
+    return {
+      'maxFeePerGas': maxFeePerGas,
+      'maxPriorityFeePerGas': maxPriorityFeePerGas,
+      'transactionCalldataGasUsed': transactionCalldataGasUsed,
+      'relayWorker': relayWorker,
+      'paymaster': paymaster,
+      'forwarder': forwarder,
+      'paymasterData': hexToBytes(paymasterData),
+      'clientId': clientId,
+    };
+  }
 
 }

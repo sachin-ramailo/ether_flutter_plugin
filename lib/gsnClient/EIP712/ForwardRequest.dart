@@ -33,4 +33,16 @@ class ForwardRequest {
       BigInt.parse(validUntilTime)
     ];
   }
+  Map<dynamic,dynamic> toMap(){
+    return {
+      'from': from,
+      'to': to,
+      'value': value,
+      'gas': gas,
+      'nonce': nonce,
+      'data': data,
+      'validUntilTime': validUntilTime
+    };
+  }
+
 }

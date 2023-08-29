@@ -101,14 +101,23 @@ import 'EIP712/typedSigning.dart';
     var relayRequestJson = relayRequest.toJson();
 
     final function = relayHub.function('relayCall');
-    final tx = await client.call(contract: relayHub, function: function,
-        params: [
-          config.domainSeparatorName,
-          BigInt.parse(maxAcceptanceBudget.substring(2), radix: 16),
-          relayRequestJson,
-          hexToBytes(signature),
-          hexToBytes(approvalData)
-        ]);
+    printLog("BigInt.parse(maxAcceptanceBudget.substring(2), radix: 16), = ${BigInt.parse(maxAcceptanceBudget.substring(2), radix: 16)}");
+    // Transaction.callContract(contract: contract, function: function, parameters: parameters)
+    final tx = Transaction.callContract(contract: relayHub, function: function, parameters: [
+      config.domainSeparatorName,
+      BigInt.parse(maxAcceptanceBudget.substring(2), radix: 16),
+      relayRequestJson,
+      hexToBytes(signature),
+      hexToBytes(approvalData)
+    ]);
+    // final tx = await client.call(contract: relayHub, function: function,
+    //     params: [
+    //       config.domainSeparatorName,
+    //       BigInt.parse(maxAcceptanceBudget.substring(2), radix: 16),
+    //       relayRequestJson,
+    //       hexToBytes(signature),
+    //       hexToBytes(approvalData)
+    //     ]);
 
     if (tx == null) {
       throw 'tx not populated';
@@ -117,7 +126,7 @@ import 'EIP712/typedSigning.dart';
     //todo: is the calculation of call data cost(from the rly sdk gsnTxHelper file)
     //similar to the estimate gas here?
     //TODO: remove this to string from next line
-    return BigInt.from(calculateCalldataCost(tx as Uint8List, config.gtxDataNonZero, config.gtxDataZero)).toRadixString(16);
+    return BigInt.from(calculateCalldataCost(tx.data!, config.gtxDataNonZero, config.gtxDataZero)).toRadixString(16);
   }
 
   Future<String> getSenderNonce(EthereumAddress sender,
@@ -143,8 +152,8 @@ import 'EIP712/typedSigning.dart';
     String chainId,
     Wallet account,
   ) async {
-    final cloneRequest = RelayRequest(
-      request: ForwardRequest(
+    final cloneRequest = {
+      "request": ForwardRequest(
         from: relayRequest.request.from,
         to: relayRequest.request.to,
         value: relayRequest.request.value,
@@ -152,24 +161,24 @@ import 'EIP712/typedSigning.dart';
         nonce: relayRequest.request.nonce,
         data: relayRequest.request.data,
         validUntilTime: relayRequest.request.validUntilTime,
-      ),
-      relayData: RelayData(
+      ).toMap(),
+      "relayData": RelayData(
         maxFeePerGas: relayRequest.relayData.maxFeePerGas,
         maxPriorityFeePerGas: relayRequest.relayData.maxPriorityFeePerGas,
         transactionCalldataGasUsed:
-            relayRequest.relayData.transactionCalldataGasUsed,
+        relayRequest.relayData.transactionCalldataGasUsed,
         relayWorker: relayRequest.relayData.relayWorker,
         paymaster: relayRequest.relayData.paymaster,
         paymasterData: relayRequest.relayData.paymasterData,
         clientId: relayRequest.relayData.clientId,
         forwarder: relayRequest.relayData.forwarder,
-      ),
-    );
-
+      ).toMap(),
+    };
+    //     String name, int chainId, EthereumAddress verifier, dynamic relayRequest)
     final signedGsnData = TypedGsnRequestData(
       domainSeparatorName,
       int.parse(chainId),
-      EthereumAddress.fromHex(relayRequest.relayData.forwarder),
+      relayRequest.relayData.forwarder,
       cloneRequest,
     );
 

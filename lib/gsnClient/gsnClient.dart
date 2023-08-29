@@ -56,7 +56,7 @@ ForwardRequest forwardRequest = ForwardRequest(from: transaction.from, to: trans
 
   final transactionCalldataGasUsed =
       await estimateCalldataCostForRequest(relayRequest, config.gsn,web3Provider);
-
+      printLog("result of estimateCalldataCostForRequest =  $transactionCalldataGasUsed ");
   relayRequest.relayData.transactionCalldataGasUsed =
       int.parse(transactionCalldataGasUsed, radix: 16).toString();
 
