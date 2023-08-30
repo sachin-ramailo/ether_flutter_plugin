@@ -19,6 +19,7 @@ dependencies:
   ethereum: ^6.0.0
   shared_preferences: ^2.0.20
   eth_sig_util: ^0.0.9
+  url_launcher: ^6.1.12
 
 
 dev_dependencies:
@@ -47,6 +48,7 @@ flutter:
         package: com.savez.flutter_sdk
         pluginClass: FlutterSdkPlugin
       ios:
+        package: com.savez.flutter_sdk
         pluginClass: FlutterSdkPlugin
 
   # To add assets to your plugin package, add an assets section, like this:

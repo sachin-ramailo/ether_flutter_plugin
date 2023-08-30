@@ -407,11 +407,7 @@ List<Map<String, Object>> getIRelayHubData() {
                 {"internalType": "uint256", "name": "gas", "type": "uint256"},
                 {"internalType": "uint256", "name": "nonce", "type": "uint256"},
                 {"internalType": "bytes", "name": "data", "type": "bytes"},
-                {
-                  "internalType": "uint256",
-                  "name": "validUntilTime",
-                  "type": "uint256"
-                }
+                {"internalType": "uint256", "name": "validUntilTime", "type": "uint256"}
               ],
               "internalType": "struct IForwarder.ForwardRequest",
               "name": "request",
@@ -419,46 +415,14 @@ List<Map<String, Object>> getIRelayHubData() {
             },
             {
               "components": [
-                {
-                  "internalType": "uint256",
-                  "name": "maxFeePerGas",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "maxPriorityFeePerGas",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "transactionCalldataGasUsed",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "address",
-                  "name": "relayWorker",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "paymaster",
-                  "type": "address"
-                },
-                {
-                  "internalType": "address",
-                  "name": "forwarder",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bytes",
-                  "name": "paymasterData",
-                  "type": "bytes"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "clientId",
-                  "type": "uint256"
-                }
+                {"internalType": "uint256", "name": "maxFeePerGas", "type": "uint256"},
+                {"internalType": "uint256", "name": "maxPriorityFeePerGas", "type": "uint256"},
+                {"internalType": "uint256", "name": "transactionCalldataGasUsed", "type": "uint256"},
+                {"internalType": "address", "name": "relayWorker", "type": "address"},
+                {"internalType": "address", "name": "paymaster", "type": "address"},
+                {"internalType": "address", "name": "forwarder", "type": "address"},
+                {"internalType": "bytes", "name": "paymasterData", "type": "bytes"},
+                {"internalType": "uint256", "name": "clientId", "type": "uint256"}
               ],
               "internalType": "struct GsnTypes.RelayData",
               "name": "relayData",

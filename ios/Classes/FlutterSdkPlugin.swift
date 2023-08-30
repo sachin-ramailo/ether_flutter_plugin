@@ -2,6 +2,7 @@ import Flutter
 import UIKit
 import Foundation
 
+
 public class FlutterSdkPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "flutter_sdk", binaryMessenger: registrar.messenger())

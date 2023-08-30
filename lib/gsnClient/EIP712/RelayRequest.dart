@@ -6,10 +6,9 @@ class RelayRequest {
   RelayData relayData;
 
   RelayRequest({required this.request, required this.relayData});
-  Map<String, dynamic> toJson() {
-    return {
-      'request': request.toJson(),
-      'relayData': relayData.toJson(),
-    };
+  List<dynamic> toJson() {
+    return
+    [  request.toJson(),
+      relayData.toJson()];
   }
 }

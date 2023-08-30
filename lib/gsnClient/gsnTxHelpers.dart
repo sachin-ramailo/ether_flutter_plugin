@@ -6,6 +6,7 @@ import 'package:convert/convert.dart';
 import 'package:eth_sig_util/eth_sig_util.dart';
 import 'package:flutter_sdk/contracts/tokenFaucet.dart';
 import 'package:flutter_sdk/gsnClient/ABI/IForwarder.dart';
+import 'package:flutter_sdk/utils/constants.dart';
 import 'package:web3dart/crypto.dart';
 
 import 'package:flutter_sdk/gsnClient/ABI/IRelayHub.dart';
@@ -22,9 +23,9 @@ import 'EIP712/typedSigning.dart';
 
 
 
-  CalldataBytes calculateCalldataBytesZeroNonzero(String calldata) {
+  CalldataBytes calculateCalldataBytesZeroNonzero(Uint8List calldata) {
     final calldataBuf =
-        Uint8List.fromList(convertLib.hex.decode(calldata.substring(2)));
+        calldata;
     int calldataZeroBytes = 0;
     int calldataNonzeroBytes = 0;
 
@@ -36,7 +37,7 @@ import 'EIP712/typedSigning.dart';
   }
 
   int calculateCalldataCost(
-    String msgData,
+    Uint8List msgData,
     int gtxDataNonZero,
     int gtxDataZero,
   ) {
@@ -56,13 +57,13 @@ import 'EIP712/typedSigning.dart';
       gtxDataNonZero,
       gtxDataZero,
     );
-    final adjustedGas = BigInt.parse(originalGas!) - BigInt.from(callDataCost);
+    final adjustedGas = BigInt.parse(originalGas!,radix: 16) - BigInt.from(callDataCost);
 
     return '0x${adjustedGas.toRadixString(16)}';
   }
 
   Future<String> estimateCalldataCostForRequest(
-      RelayRequest relayRequestOriginal, GSNConfig config) async {
+      RelayRequest relayRequestOriginal, GSNConfig config,Web3Client client) async {
     // Protecting the original object from temporary modifications done here
     var relayRequest = RelayRequest(
       request: ForwardRequest(
@@ -83,12 +84,13 @@ import 'EIP712/typedSigning.dart';
         paymaster: relayRequestOriginal.relayData.paymaster,
         paymasterData:
             '0x${List.filled(config.maxPaymasterDataLength, 'ff').join()}',
-        clientId: '0xffffffffff',
+        clientId: relayRequestOriginal.relayData.clientId,
         forwarder: relayRequestOriginal.relayData.forwarder,
       ),
     );
 
-    const maxAcceptanceBudget = '0xffffffffff';
+    const maxAcceptanceBudget = "0xffffffffff";
+    // final maxAcceptanceBudget = BigInt.from(12345);
     final signature = '0x${List.filled(65, 'ff').join()}';
     final approvalData =
         '0x${List.filled(config.maxApprovalDataLength, 'ff').join()}';
@@ -96,43 +98,51 @@ import 'EIP712/typedSigning.dart';
     final relayHub = relayHubContract(config.relayHubAddress);
     // Estimate the gas cost for the relayCall function call
 
-    var relayRequestJson = jsonEncode(relayRequest.toJson());
-    //todo: -> at other places in other files too, whereever there is a
-    //function called on populateTransation field(in the rly sdk), instead of calling that
-    //function itself(in dart files),we have to use this encodeCall to make a callable obejct
-    //which will be used further in the code
-    //for ex: here is is used in calculated the gas estimate in the next step
+    var relayRequestJson = relayRequest.toJson();
 
-    final function = relayHub.function('relayHub');
+    final function = relayHub.function('relayCall');
+    printLog("BigInt.parse(maxAcceptanceBudget.substring(2), radix: 16), = ${BigInt.parse(maxAcceptanceBudget.substring(2), radix: 16)}");
+    // Transaction.callContract(contract: contract, function: function, parameters: parameters)
+    final tx = Transaction.callContract(contract: relayHub, function: function, parameters: [
+      config.domainSeparatorName,
+      BigInt.parse(maxAcceptanceBudget.substring(2), radix: 16),
+      relayRequestJson,
+      hexToBytes(signature),
+      hexToBytes(approvalData)
+    ]);
+    // final tx = await client.call(contract: relayHub, function: function,
+    //     params: [
+    //       config.domainSeparatorName,
+    //       BigInt.parse(maxAcceptanceBudget.substring(2), radix: 16),
+    //       relayRequestJson,
+    //       hexToBytes(signature),
+    //       hexToBytes(approvalData)
+    //     ]);
 
-    final tx =  Transaction.callContract(contract: relayHub, function: function, parameters: [ config.domainSeparatorName, maxAcceptanceBudget, relayRequestJson, signature,  approvalData]);
-    if (tx == null || tx.data == null ||tx.data!.isEmpty) {
+    if (tx == null) {
       throw 'tx not populated';
     }
-
 
     //todo: is the calculation of call data cost(from the rly sdk gsnTxHelper file)
     //similar to the estimate gas here?
     //TODO: remove this to string from next line
-    return BigInt.from(calculateCalldataCost(tx.data.toString(), config.gtxDataNonZero, config.gtxDataZero)).toString();
+    return BigInt.from(calculateCalldataCost(tx.data!, config.gtxDataNonZero, config.gtxDataZero)).toRadixString(16);
   }
 
   Future<String> getSenderNonce(EthereumAddress sender,
       EthereumAddress forwarderAddress, Web3Client client) async {
-    final forwarder = forwarderContractGetNonceFunction(forwarderAddress);
+    final forwarder = iForwarderContract(forwarderAddress);
 
     final List<dynamic> result = await client.call(
       contract: forwarder,
       function: forwarder.function("getNonce"),
       params: [sender],
     );
-
-    // TODO:- info explainer
     // Extract the nonce value from the result and convert it to a string
     // if you go to getNonce method of IForwarderData.dart
     //there is only one output defined in the getNonce method
     //that's why we can be sure that result[0] will be used here
-    final nonce = (result[0] as BigInt).toString();
+    final nonce = result.first.toString();
     return nonce;
   }
 
@@ -142,8 +152,8 @@ import 'EIP712/typedSigning.dart';
     String chainId,
     Wallet account,
   ) async {
-    final cloneRequest = RelayRequest(
-      request: ForwardRequest(
+    final cloneRequest = {
+      "request": ForwardRequest(
         from: relayRequest.request.from,
         to: relayRequest.request.to,
         value: relayRequest.request.value,
@@ -151,24 +161,24 @@ import 'EIP712/typedSigning.dart';
         nonce: relayRequest.request.nonce,
         data: relayRequest.request.data,
         validUntilTime: relayRequest.request.validUntilTime,
-      ),
-      relayData: RelayData(
+      ).toMap(),
+      "relayData": RelayData(
         maxFeePerGas: relayRequest.relayData.maxFeePerGas,
         maxPriorityFeePerGas: relayRequest.relayData.maxPriorityFeePerGas,
         transactionCalldataGasUsed:
-            relayRequest.relayData.transactionCalldataGasUsed,
+        relayRequest.relayData.transactionCalldataGasUsed,
         relayWorker: relayRequest.relayData.relayWorker,
         paymaster: relayRequest.relayData.paymaster,
         paymasterData: relayRequest.relayData.paymasterData,
         clientId: relayRequest.relayData.clientId,
         forwarder: relayRequest.relayData.forwarder,
-      ),
-    );
-
+      ).toMap(),
+    };
+    //     String name, int chainId, EthereumAddress verifier, dynamic relayRequest)
     final signedGsnData = TypedGsnRequestData(
       domainSeparatorName,
       int.parse(chainId),
-      EthereumAddress.fromHex(relayRequest.relayData.forwarder),
+      relayRequest.relayData.forwarder,
       cloneRequest,
     );
 
@@ -194,7 +204,7 @@ import 'EIP712/typedSigning.dart';
 
     final hash = keccak256(AbiUtil.rawEncode(types, parameters));
     final rawRelayRequestId = hex.encode(hash).padLeft(64, '0');
-    final prefixSize = 8;
+    const prefixSize = 8;
     final prefixedRelayRequestId = rawRelayRequestId.replaceFirst(
         RegExp('^.{$prefixSize}'), '0' * prefixSize);
     return '0x$prefixedRelayRequestId';
@@ -210,30 +220,36 @@ import 'EIP712/typedSigning.dart';
       EthereumAddress.fromHex(config.contracts.tokenFaucet),
     );
 
-
-    final fn = faucet.function('claim');
-
-    final tx1 = client.call(contract: faucet, function: fn, params: []);
+    final tx = faucet.function('claim').encodeCall([]);
     final gas = await client.estimateGas(
       sender: account.privateKey.address,
-      // data: tx,
+      data: tx,
+      to: faucet.address,
     );
 
     //TODO:-> following code is inspired from getFeeData method of
     //abstract-provider of ethers js library
     //test if it exactly replicates the functions of getFeeData
-    final EtherAmount gasPrice = await client.getGasPrice();
+
+    BlockInformation blockInformation = await client.getBlockInformation();
     final BigInt maxPriorityFeePerGas = BigInt.parse("1500000000");
-    final maxFeePerGas =
-        gasPrice.getInWei * BigInt.from(2) + (maxPriorityFeePerGas);
+    BigInt? maxFeePerGas;
+    if(blockInformation.baseFeePerGas != null){
+      maxFeePerGas =
+          blockInformation.baseFeePerGas!.getInWei * BigInt.from(2) + (maxPriorityFeePerGas);
+    }
+
+
+    Uint8List data = tx;
+    printLog("transaction data = $data");
     final gsnTx = GsnTransactionDetails(
       from: account.privateKey.address.toString(),
-      data: tx1.toString(),
-      value: EtherAmount.zero().toString(),
+      data: data,
+      value: "0",
       to: faucet.address.hex,
-      gas: gas.toString(),
-      maxFeePerGas: maxFeePerGas.toString(),
-      maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+      gas: gas.toRadixString(16),
+      maxFeePerGas: maxFeePerGas!.toRadixString(16),
+      maxPriorityFeePerGas: maxPriorityFeePerGas.toRadixString(16),
     );
 
     return gsnTx;
@@ -306,4 +322,7 @@ class CalldataBytes {
   final int calldataNonzeroBytes;
 
   CalldataBytes(this.calldataZeroBytes, this.calldataNonzeroBytes);
+}
+String uint8ListToHex(Uint8List list) {
+  return '0x${hex.encode(list)}';
 }

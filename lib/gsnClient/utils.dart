@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 enum RlyEnv {
   local,
 }
@@ -11,7 +13,7 @@ class GsnTransactionDetails {
   // users address
   final String from;
   // tx data
-  final String data;
+  final Uint8List data;
   //contract address
   final String to;
 

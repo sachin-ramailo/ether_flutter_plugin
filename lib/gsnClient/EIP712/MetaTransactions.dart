@@ -220,7 +220,7 @@ Future<GsnTransactionDetails> getExecuteMetatransactionTx(
 
   final gsnTx = GsnTransactionDetails(
     from: account.privateKey.address.hex,
-    data: '0x${tx[0]}',
+    data: tx[0],
     value: "0",
     to: token.address.hex,
     /* from the populateTransaction method of index.ts of ethers,
