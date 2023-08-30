@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import Foundation
 
 public class FlutterSdkPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
@@ -12,6 +13,8 @@ public class FlutterSdkPlugin: NSObject, FlutterPlugin {
     switch call.method {
     case "getPlatformVersion":
       result("iOS " + UIDevice.current.systemVersion)
+    case "generateNewMnemonic":
+      result(RlyNetworkMobileSdk().generateMnemonic())
     default:
       result(FlutterMethodNotImplemented)
     }
