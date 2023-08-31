@@ -38,7 +38,7 @@ class RelayData {
     ];
   }
 
-  Map<dynamic,dynamic> toMap(){
+  Map<String,dynamic> toMap(){
     return {
       'maxFeePerGas': maxFeePerGas,
       'maxPriorityFeePerGas': maxPriorityFeePerGas,

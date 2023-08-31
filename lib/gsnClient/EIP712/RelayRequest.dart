@@ -11,4 +11,12 @@ class RelayRequest {
     [  request.toJson(),
       relayData.toJson()];
   }
+
+  Map<String,dynamic> toMap(){
+    return {
+      "request" : request.toMap(),
+      "relayData" : relayData.toMap()
+    };
+  }
+
 }

@@ -2,18 +2,11 @@ import 'package:eth_sig_util/model/typed_data.dart';
 
 import '../utils.dart';
 
-class MessageTypeProperty {
-  String name;
-  String type;
-
-  MessageTypeProperty({required this.name, required this.type});
-}
-
 class TypedGsnRequestData {
   late GsnPrimaryType types;
-  late EIP712Domain domain;
+  late EIP712Domain? domain;
   late String primaryType;
-  late dynamic message;
+  late Map<String,dynamic> message;
 
   TypedGsnRequestData(
       String name, int chainId, Address verifier, Map<String, dynamic> relayRequest) {
@@ -33,6 +26,12 @@ class TypedGsnRequestData {
       'relayData': relayRequest['relayData'],
     };
   }
+
+  dynamic getFormattedData(){
+    return TypedMessage(types: types.getTypesMap(), primaryType: primaryType, domain: domain, message: message);
+  }
+
+
 }
 
 Map<String, dynamic> GsnDomainSeparatorType = {
@@ -40,80 +39,74 @@ Map<String, dynamic> GsnDomainSeparatorType = {
   'version': '3',
 };
 
-EIP712Domain getDomainSeparator(String name, Address verifier, int chainId) {
+EIP712Domain? getDomainSeparator(String name, Address verifier, int chainId) {
   return EIP712Domain(
     chainId: chainId,
     name: name,
     version: GsnDomainSeparatorType['version'],
-    verifyingContract: verifier,
+    verifyingContract: verifier, salt: '',
   );
 }
 
-List<MessageTypeProperty> EIP712DomainType = [
-  MessageTypeProperty(name: 'name', type: 'string'),
-  MessageTypeProperty(name: 'version', type: 'string'),
-  MessageTypeProperty(name: 'chainId', type: 'uint256'),
-  MessageTypeProperty(name: 'verifyingContract', type: 'address'),
+List<TypedDataField> EIP712DomainType1 = [
+  TypedDataField(name: 'name', type: 'string'),
+  TypedDataField(name: 'version', type: 'string'),
+  TypedDataField(name: 'chainId', type: 'uint256'),
+  TypedDataField(name: 'verifyingContract', type: 'address'),
 ];
 
-List<MessageTypeProperty> EIP712DomainTypeWithoutVersion = [
-  MessageTypeProperty(name: 'name', type: 'string'),
-  MessageTypeProperty(name: 'chainId', type: 'uint256'),
-  MessageTypeProperty(name: 'verifyingContract', type: 'address'),
+List<TypedDataField> EIP712DomainTypeWithoutVersion = [
+  TypedDataField(name: 'name', type: 'string'),
+  TypedDataField(name: 'chainId', type: 'uint256'),
+  TypedDataField(name: 'verifyingContract', type: 'address'),
 ];
 
-List<MessageTypeProperty> RelayDataType = [
-  MessageTypeProperty(name: 'maxFeePerGas', type: 'uint256'),
-  MessageTypeProperty(name: 'maxPriorityFeePerGas', type: 'uint256'),
-  MessageTypeProperty(name: 'transactionCalldataGasUsed', type: 'uint256'),
-  MessageTypeProperty(name: 'relayWorker', type: 'address'),
-  MessageTypeProperty(name: 'paymaster', type: 'address'),
-  MessageTypeProperty(name: 'forwarder', type: 'address'),
-  MessageTypeProperty(name: 'paymasterData', type: 'bytes'),
-  MessageTypeProperty(name: 'clientId', type: 'uint256'),
+List<TypedDataField> RelayDataType = [
+  TypedDataField(name: 'maxFeePerGas', type: 'uint256'),
+  TypedDataField(name: 'maxPriorityFeePerGas', type: 'uint256'),
+  TypedDataField(name: 'transactionCalldataGasUsed', type: 'uint256'),
+  TypedDataField(name: 'relayWorker', type: 'address'),
+  TypedDataField(name: 'paymaster', type: 'address'),
+  TypedDataField(name: 'forwarder', type: 'address'),
+  TypedDataField(name: 'paymasterData', type: 'bytes'),
+  TypedDataField(name: 'clientId', type: 'uint256'),
 ];
 
-List<MessageTypeProperty> ForwardRequestType = [
-  MessageTypeProperty(name: 'from', type: 'address'),
-  MessageTypeProperty(name: 'to', type: 'address'),
-  MessageTypeProperty(name: 'value', type: 'uint256'),
-  MessageTypeProperty(name: 'gas', type: 'uint256'),
-  MessageTypeProperty(name: 'nonce', type: 'uint256'),
-  MessageTypeProperty(name: 'data', type: 'bytes'),
-  MessageTypeProperty(name: 'validUntilTime', type: 'uint256'),
+List<TypedDataField> ForwardRequestType = [
+  TypedDataField(name: 'from', type: 'address'),
+  TypedDataField(name: 'to', type: 'address'),
+  TypedDataField(name: 'value', type: 'uint256'),
+  TypedDataField(name: 'gas', type: 'uint256'),
+  TypedDataField(name: 'nonce', type: 'uint256'),
+  TypedDataField(name: 'data', type: 'bytes'),
+  TypedDataField(name: 'validUntilTime', type: 'uint256'),
 ];
 
-List<MessageTypeProperty> RelayRequestType = [
+List<TypedDataField> RelayRequestType = [
   ...ForwardRequestType,
-  MessageTypeProperty(name: 'relayData', type: 'RelayData'),
+  TypedDataField(name: 'relayData', type: 'RelayData'),
 ];
 
 class MessageTypes {
-  List<MessageTypeProperty> EIP712Domain = EIP712DomainType;
-  Map<String, MessageTypeProperty> additionalProperties = {};
+  List<TypedDataField> EIP712Domain = EIP712DomainType1;
+  Map<String, TypedDataField> additionalProperties = {};
 }
 
 class GsnPrimaryType {
-  List<MessageTypeProperty> relayRequest;
-  List<MessageTypeProperty> relayData;
+  List<TypedDataField> relayRequest;
+  List<TypedDataField> relayData;
 
   GsnPrimaryType({
     required this.relayRequest,
     required this.relayData,
   });
 
-}
+  Map<String,List<TypedDataField>> getTypesMap(){
+    return {
+      "domain":EIP712DomainType1,
+      'RelayRequest': relayRequest,
+      'RelayData': relayData,
+    };
+  }
 
-class EIP712Domain {
-  final String? name;
-  final String? version;
-  final int? chainId;
-  final String? verifyingContract;
-
-  EIP712Domain({
-    required this.name,
-    required this.version,
-    required this.chainId,
-    required this.verifyingContract
-  });
 }

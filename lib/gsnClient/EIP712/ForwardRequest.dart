@@ -33,7 +33,7 @@ class ForwardRequest {
       BigInt.parse(validUntilTime)
     ];
   }
-  Map<dynamic,dynamic> toMap(){
+  Map<String,dynamic> toMap(){
     return {
       'from': from,
       'to': to,

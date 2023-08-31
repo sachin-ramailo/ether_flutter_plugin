@@ -74,6 +74,7 @@ Future<Map<String, dynamic>> buildRelayHttpRequest(
     config.gsn.domainSeparatorName,
     config.gsn.chainId,
     account,
+    config
   );
 
   const approvalData = '0x';
@@ -94,7 +95,7 @@ Future<Map<String, dynamic>> buildRelayHttpRequest(
     'relayRequestId': '',
   };
   final httpRequest = {
-    'relayRequest': relayRequest,
+    'relayRequest': relayRequest.toMap(),
     'metadata': metadata,
   };
 
