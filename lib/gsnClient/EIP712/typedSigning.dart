@@ -1,82 +1,119 @@
-import 'package:web3dart/web3dart.dart';
+import 'package:eth_sig_util/model/typed_data.dart';
 
-const Map<String, String> gsnDomainSeparatorType = {
+import '../utils.dart';
+
+class MessageTypeProperty {
+  String name;
+  String type;
+
+  MessageTypeProperty({required this.name, required this.type});
+}
+
+class TypedGsnRequestData {
+  late GsnPrimaryType types;
+  late EIP712Domain domain;
+  late String primaryType;
+  late dynamic message;
+
+  TypedGsnRequestData(
+      String name, int chainId, Address verifier, Map<String, dynamic> relayRequest) {
+    types = GsnPrimaryType(relayData:RelayDataType,
+        relayRequest: RelayRequestType);
+    domain = getDomainSeparator(name, verifier, chainId);
+    primaryType = 'RelayRequest';
+    // In the signature, all "request" fields are flattened out at the top structure.
+    // Other params are inside "relayData" sub-type.
+    message = {
+      ...relayRequest['request'],
+      /*
+      "from": relayRequest['request']['from'],
+      "to": relayRequest['request']['to'],
+      ....
+       */
+      'relayData': relayRequest['relayData'],
+    };
+  }
+}
+
+Map<String, dynamic> GsnDomainSeparatorType = {
   'prefix': 'string name,string version',
   'version': '3',
 };
 
-Map<String, dynamic> getDomainSeparator(
-    String name, EthereumAddress verifier, int chainId) {
-  return {
-    'name': name,
-    'version': gsnDomainSeparatorType['version'],
-    'chainId': chainId,
-    'verifyingContract': verifier.hex,
-  };
+EIP712Domain getDomainSeparator(String name, Address verifier, int chainId) {
+  return EIP712Domain(
+    chainId: chainId,
+    name: name,
+    version: GsnDomainSeparatorType['version'],
+    verifyingContract: verifier,
+  );
 }
 
-class MessageTypeProperty {
-  final String name;
-  final String type;
+List<MessageTypeProperty> EIP712DomainType = [
+  MessageTypeProperty(name: 'name', type: 'string'),
+  MessageTypeProperty(name: 'version', type: 'string'),
+  MessageTypeProperty(name: 'chainId', type: 'uint256'),
+  MessageTypeProperty(name: 'verifyingContract', type: 'address'),
+];
 
-  MessageTypeProperty(this.name, this.type);
+List<MessageTypeProperty> EIP712DomainTypeWithoutVersion = [
+  MessageTypeProperty(name: 'name', type: 'string'),
+  MessageTypeProperty(name: 'chainId', type: 'uint256'),
+  MessageTypeProperty(name: 'verifyingContract', type: 'address'),
+];
+
+List<MessageTypeProperty> RelayDataType = [
+  MessageTypeProperty(name: 'maxFeePerGas', type: 'uint256'),
+  MessageTypeProperty(name: 'maxPriorityFeePerGas', type: 'uint256'),
+  MessageTypeProperty(name: 'transactionCalldataGasUsed', type: 'uint256'),
+  MessageTypeProperty(name: 'relayWorker', type: 'address'),
+  MessageTypeProperty(name: 'paymaster', type: 'address'),
+  MessageTypeProperty(name: 'forwarder', type: 'address'),
+  MessageTypeProperty(name: 'paymasterData', type: 'bytes'),
+  MessageTypeProperty(name: 'clientId', type: 'uint256'),
+];
+
+List<MessageTypeProperty> ForwardRequestType = [
+  MessageTypeProperty(name: 'from', type: 'address'),
+  MessageTypeProperty(name: 'to', type: 'address'),
+  MessageTypeProperty(name: 'value', type: 'uint256'),
+  MessageTypeProperty(name: 'gas', type: 'uint256'),
+  MessageTypeProperty(name: 'nonce', type: 'uint256'),
+  MessageTypeProperty(name: 'data', type: 'bytes'),
+  MessageTypeProperty(name: 'validUntilTime', type: 'uint256'),
+];
+
+List<MessageTypeProperty> RelayRequestType = [
+  ...ForwardRequestType,
+  MessageTypeProperty(name: 'relayData', type: 'RelayData'),
+];
+
+class MessageTypes {
+  List<MessageTypeProperty> EIP712Domain = EIP712DomainType;
+  Map<String, MessageTypeProperty> additionalProperties = {};
 }
 
-final List<MessageTypeProperty> eip712DomainType = [
-  MessageTypeProperty('name', 'string'),
-  MessageTypeProperty('version', 'string'),
-  MessageTypeProperty('chainId', 'uint256'),
-  MessageTypeProperty('verifyingContract', 'address'),
-];
+class GsnPrimaryType {
+  List<MessageTypeProperty> relayRequest;
+  List<MessageTypeProperty> relayData;
 
-final List<MessageTypeProperty> eip712DomainTypeWithoutVersion = [
-  MessageTypeProperty('name', 'string'),
-  MessageTypeProperty('chainId', 'uint256'),
-  MessageTypeProperty('verifyingContract', 'address'),
-];
+  GsnPrimaryType({
+    required this.relayRequest,
+    required this.relayData,
+  });
 
-final List<MessageTypeProperty> relayDataType = [
-  MessageTypeProperty('maxFeePerGas', 'uint256'),
-  MessageTypeProperty('maxPriorityFeePerGas', 'uint256'),
-  MessageTypeProperty('transactionCalldataGasUsed', 'uint256'),
-  MessageTypeProperty('relayWorker', 'address'),
-  MessageTypeProperty('paymaster', 'address'),
-  MessageTypeProperty('forwarder', 'address'),
-  MessageTypeProperty('paymasterData', 'bytes'),
-  MessageTypeProperty('clientId', 'uint256'),
-];
+}
 
-final List<MessageTypeProperty> forwardRequestType = [
-  MessageTypeProperty('from', 'address'),
-  MessageTypeProperty('to', 'address'),
-  MessageTypeProperty('value', 'uint256'),
-  MessageTypeProperty('gas', 'uint256'),
-  MessageTypeProperty('nonce', 'uint256'),
-  MessageTypeProperty('data', 'bytes'),
-  MessageTypeProperty('validUntilTime', 'uint256'),
-];
+class EIP712Domain {
+  final String? name;
+  final String? version;
+  final int? chainId;
+  final String? verifyingContract;
 
-final List<MessageTypeProperty> relayRequestType = [
-  ...forwardRequestType,
-  MessageTypeProperty('relayData', 'RelayData'),
-];
-
-class TypedGsnRequestData {
-  final Map<String, List<MessageTypeProperty>> types;
-  final Map<String, dynamic> domain;
-  final String primaryType;
-  final Map<String, dynamic> message;
-
-  TypedGsnRequestData(
-      String name, int chainId, EthereumAddress verifier, dynamic relayRequest)
-      : types = {
-          'RelayRequest': relayRequestType,
-          'RelayData': relayDataType,
-        },
-        domain = getDomainSeparator(name, verifier, chainId),
-        primaryType = 'RelayRequest',
-        message = {
-          ...relayRequest['request'],
-          'relayData': relayRequest['relayData'],
-        };
+  EIP712Domain({
+    required this.name,
+    required this.version,
+    required this.chainId,
+    required this.verifyingContract
+  });
 }
