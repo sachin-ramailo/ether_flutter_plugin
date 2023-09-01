@@ -23,21 +23,22 @@ import 'EIP712/typedSigning.dart';
 
 
 
-  CalldataBytes calculateCalldataBytesZeroNonzero(Uint8List calldata) {
-    final calldataBuf =
-        calldata;
+  CalldataBytes calculateCalldataBytesZeroNonzero(PrefixedHexString calldata) {
+    final calldataBuf = Uint8List.fromList(calldata.replaceAll('0x', '').codeUnits);
+
     int calldataZeroBytes = 0;
     int calldataNonzeroBytes = 0;
 
     calldataBuf.forEach((ch) {
-      ch == 0 ? calldataZeroBytes++ : calldataNonzeroBytes++;
+      calldataZeroBytes += ch == 0 ? 1 : 0;
+      calldataNonzeroBytes += ch != 0 ? 1 : 0;
     });
 
     return CalldataBytes(calldataZeroBytes, calldataNonzeroBytes);
   }
 
   int calculateCalldataCost(
-    Uint8List msgData,
+    String msgData,
     int gtxDataNonZero,
     int gtxDataZero,
   ) {
@@ -126,7 +127,7 @@ import 'EIP712/typedSigning.dart';
     //todo: is the calculation of call data cost(from the rly sdk gsnTxHelper file)
     //similar to the estimate gas here?
     //TODO: remove this to string from next line
-    return BigInt.from(calculateCalldataCost(tx.data!, config.gtxDataNonZero, config.gtxDataZero)).toRadixString(16);
+    return BigInt.from(calculateCalldataCost(uint8ListToHex(tx.data!), config.gtxDataNonZero, config.gtxDataZero)).toRadixString(16);
   }
 
   Future<String> getSenderNonce(EthereumAddress sender,
@@ -286,10 +287,10 @@ import 'EIP712/typedSigning.dart';
       EthereumAddress.fromHex(config.contracts.tokenFaucet),
     );
 
-    final tx = faucet.function('claim').encodeCall([]);
+    final tx  = Transaction.callContract(contract: faucet, function: faucet.function('claim'), parameters: []);
     final gas = await client.estimateGas(
       sender: account.privateKey.address,
-      data: tx,
+      data: tx.data,
       to: faucet.address,
     );
 
@@ -305,12 +306,11 @@ import 'EIP712/typedSigning.dart';
           blockInformation.baseFeePerGas!.getInWei * BigInt.from(2) + (maxPriorityFeePerGas);
     }
 
-
-    Uint8List data = tx;
-    printLog("transaction data = $data");
+    printLog("transaction data = ${tx.data}");
+    printLog("transaction data in string = ${uint8ListToHex(tx.data!)}");
     final gsnTx = GsnTransactionDetails(
       from: account.privateKey.address.toString(),
-      data: data,
+      data: uint8ListToHex(tx.data!) ,
       value: "0",
       to: faucet.address.hex,
       gas: gas.toRadixString(16),

@@ -46,7 +46,7 @@ class RelayData {
       'relayWorker': relayWorker,
       'paymaster': paymaster,
       'forwarder': forwarder,
-      'paymasterData': hexToBytes(paymasterData),
+      'paymasterData': paymasterData,
       'clientId': clientId,
     };
   }

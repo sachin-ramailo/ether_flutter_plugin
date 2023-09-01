@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:eth_sig_util/util/utils.dart';
 import 'package:web3dart/credentials.dart';
 
 import '../utils.dart';
@@ -10,7 +11,7 @@ class ForwardRequest {
   IntString value;
   IntString gas;
   IntString nonce;
-  Uint8List data;
+  String data;
   IntString validUntilTime;
 
   ForwardRequest({
@@ -29,7 +30,7 @@ class ForwardRequest {
       BigInt.parse(value),
       BigInt.parse(gas),
       BigInt.parse(nonce),
-      data,
+      hexToBytes(data),
       BigInt.parse(validUntilTime)
     ];
   }
