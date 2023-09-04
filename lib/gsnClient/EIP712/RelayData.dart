@@ -38,7 +38,7 @@ class RelayData {
     ];
   }
 
-  Map<dynamic,dynamic> toMap(){
+  Map<String,dynamic> toMap(){
     return {
       'maxFeePerGas': maxFeePerGas,
       'maxPriorityFeePerGas': maxPriorityFeePerGas,
@@ -46,7 +46,7 @@ class RelayData {
       'relayWorker': relayWorker,
       'paymaster': paymaster,
       'forwarder': forwarder,
-      'paymasterData': hexToBytes(paymasterData),
+      'paymasterData': paymasterData,
       'clientId': clientId,
     };
   }

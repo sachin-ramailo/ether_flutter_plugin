@@ -63,6 +63,7 @@ class AccountsUtil {
     final wallet = await getWallet();
     printLog('Wallet address = ${wallet.privateKey.address.hex}');
     printLog("wallet private key = ${wallet.privateKey.privateKeyInt}");
+    printLog("bytesToHex(wallet.privateKey.privateKey) = ${bytesToHex(wallet.privateKey.privateKey)}");
     return wallet.privateKey.address.hex;
   }
 

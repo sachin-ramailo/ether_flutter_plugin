@@ -13,7 +13,7 @@ class GsnTransactionDetails {
   // users address
   final String from;
   // tx data
-  final Uint8List data;
+  final String data;
   //contract address
   final String to;
 

@@ -48,7 +48,7 @@ ForwardRequest forwardRequest = ForwardRequest(from: transaction.from, to: trans
     data: transaction.data, validUntilTime: validUntilTime,);
   RelayData relayData = RelayData(maxFeePerGas: transaction.maxFeePerGas, maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
       transactionCalldataGasUsed: '',
-      relayWorker: config.gsn.relayWorkerAddress, paymaster: config.gsn.relayWorkerAddress,
+      relayWorker: config.gsn.relayWorkerAddress, paymaster: config.gsn.paymasterAddress,
       paymasterData: (transaction.paymasterData != null) ? transaction.paymasterData.toString() : '0x',
       clientId: '1', forwarder: config.gsn.forwarderAddress);
 
@@ -74,6 +74,7 @@ Future<Map<String, dynamic>> buildRelayHttpRequest(
     config.gsn.domainSeparatorName,
     config.gsn.chainId,
     account,
+    config
   );
 
   const approvalData = '0x';
@@ -94,7 +95,7 @@ Future<Map<String, dynamic>> buildRelayHttpRequest(
     'relayRequestId': '',
   };
   final httpRequest = {
-    'relayRequest': relayRequest,
+    'relayRequest': relayRequest.toMap(),
     'metadata': metadata,
   };
 
@@ -134,6 +135,12 @@ getEthClient();
     'Authorization': 'Bearer ${config.relayerApiKey ?? ''}',
   };
 
+  printLog('httpRequest = $httpRequest');
+  printLog("Start printi\||\\ng http request");
+for(MapEntry entry in httpRequest.entries){
+  printLog("${entry.key} :-> ${entry.value}");
+}
+printLog("end printing http request");
   final res = await http.post(
     Uri.parse('${config.gsn.relayUrl}/relay'),
     headers: authHeader,

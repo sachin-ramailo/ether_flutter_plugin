@@ -23,21 +23,22 @@ import 'EIP712/typedSigning.dart';
 
 
 
-  CalldataBytes calculateCalldataBytesZeroNonzero(Uint8List calldata) {
-    final calldataBuf =
-        calldata;
+  CalldataBytes calculateCalldataBytesZeroNonzero(PrefixedHexString calldata) {
+    final calldataBuf = Uint8List.fromList(calldata.replaceAll('0x', '').codeUnits);
+
     int calldataZeroBytes = 0;
     int calldataNonzeroBytes = 0;
 
     calldataBuf.forEach((ch) {
-      ch == 0 ? calldataZeroBytes++ : calldataNonzeroBytes++;
+      calldataZeroBytes += ch == 0 ? 1 : 0;
+      calldataNonzeroBytes += ch != 0 ? 1 : 0;
     });
 
     return CalldataBytes(calldataZeroBytes, calldataNonzeroBytes);
   }
 
   int calculateCalldataCost(
-    Uint8List msgData,
+    String msgData,
     int gtxDataNonZero,
     int gtxDataZero,
   ) {
@@ -126,7 +127,7 @@ import 'EIP712/typedSigning.dart';
     //todo: is the calculation of call data cost(from the rly sdk gsnTxHelper file)
     //similar to the estimate gas here?
     //TODO: remove this to string from next line
-    return BigInt.from(calculateCalldataCost(tx.data!, config.gtxDataNonZero, config.gtxDataZero)).toRadixString(16);
+    return BigInt.from(calculateCalldataCost(uint8ListToHex(tx.data!), config.gtxDataNonZero, config.gtxDataZero)).toRadixString(16);
   }
 
   Future<String> getSenderNonce(EthereumAddress sender,
@@ -151,8 +152,9 @@ import 'EIP712/typedSigning.dart';
     String domainSeparatorName,
     String chainId,
     Wallet account,
+      NetworkConfig config,
   ) async {
-    final cloneRequest = {
+    final cloneRequest ={
       "request": ForwardRequest(
         from: relayRequest.request.from,
         to: relayRequest.request.to,
@@ -182,11 +184,76 @@ import 'EIP712/typedSigning.dart';
       cloneRequest,
     );
 
+
+    // Define the domain separator
+    final domainSeparator = {
+      'name': domainSeparatorName,
+      'version': '1.0',
+      'chainId': chainId, // Ethereum Mainnet chain ID
+      'verifyingContract': config.contracts.tokenFaucet,
+    };
+
+// Define the types and primary type
+    final types = {
+      'EIP712Domain': [
+        {'name': 'name', 'type': 'string'},
+        {'name': 'version', 'type': 'string'},
+        {'name': 'chainId', 'type': 'uint256'},
+        {'name': 'verifyingContract', 'type': 'address'},
+      ],
+      'RelayRequest': [
+        // Define fields for RelayRequest
+        {'name': 'forwardRequest', 'type': 'ForwardRequest'},
+        {'name': 'relayData', 'type': 'RelayData'},
+      ],
+      'ForwardRequest': [
+        // Define fields for ForwardRequest
+        {'name': 'from', 'type': 'address'},
+        {'name': 'to', 'type': 'address'},
+        {'name': 'value', 'type': 'uint256'},
+        {'name': 'gas', 'type': 'uint256'},
+        {'name': 'nonce', 'type': 'uint256'},
+        {'name': 'data', 'type': 'bytes'},
+        {'name': 'validUntilTime', 'type': 'uint256'},
+      ],
+      'RelayData': [
+        // Define fields for RelayData
+        {'name': 'maxFeePerGas', 'type': 'uint256'},
+        {'name': 'maxPriorityFeePerGas', 'type': 'uint256'},
+        {'name': 'transactionCalldataGasUsed', 'type': 'uint256'},
+        {'name': 'relayWorker', 'type': 'address'},
+        {'name': 'paymaster', 'type': 'address'},
+        {'name': 'forwarder', 'type': 'address'},
+        {'name': 'paymasterData', 'type': 'bytes'},
+        {'name': 'clientId', 'type': 'uint256'},
+      ],
+    };
+
+    const primaryType = 'RelayRequest';
+
+// Define the message data
+    final messageData = {
+      'forwardRequest': relayRequest.request.toMap(),
+      'relayData': relayRequest.relayData.toMap(),
+    };
+
+// Combine domain separator, types, primary type, and message data
+    final jsonData = {
+      'types': types,
+      'primaryType': primaryType,
+      'domain': domainSeparator,
+      'message': messageData,
+    };
+
+// Sign the data using ethsigutil.signTypedData
     final signature = EthSigUtil.signTypedData(
-      jsonData: jsonEncode(signedGsnData.message),
-      privateKey: account.privateKey.toString(),
-      version: TypedDataVersion.V1,
+      jsonData: jsonEncode(jsonData),
+      privateKey: bytesToHex(account.privateKey.privateKey),
+      version: TypedDataVersion.V4,
     );
+
+    printLog('Signature: $signature');
+
 
     return signature;
   }
@@ -220,10 +287,10 @@ import 'EIP712/typedSigning.dart';
       EthereumAddress.fromHex(config.contracts.tokenFaucet),
     );
 
-    final tx = faucet.function('claim').encodeCall([]);
+    final tx  = Transaction.callContract(contract: faucet, function: faucet.function('claim'), parameters: []);
     final gas = await client.estimateGas(
       sender: account.privateKey.address,
-      data: tx,
+      data: tx.data,
       to: faucet.address,
     );
 
@@ -239,12 +306,11 @@ import 'EIP712/typedSigning.dart';
           blockInformation.baseFeePerGas!.getInWei * BigInt.from(2) + (maxPriorityFeePerGas);
     }
 
-
-    Uint8List data = tx;
-    printLog("transaction data = $data");
+    printLog("transaction data = ${tx.data}");
+    printLog("transaction data in string = ${uint8ListToHex(tx.data!)}");
     final gsnTx = GsnTransactionDetails(
       from: account.privateKey.address.toString(),
-      data: data,
+      data: uint8ListToHex(tx.data!) ,
       value: "0",
       to: faucet.address.hex,
       gas: gas.toRadixString(16),
