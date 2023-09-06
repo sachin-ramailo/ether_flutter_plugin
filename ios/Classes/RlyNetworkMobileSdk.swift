@@ -1,41 +1,31 @@
-@objc(RlyNetworkMobileSdk)
-class RlyNetworkMobileSdk: NSObject {
+import Foundation
+
+
+public class RlyNetworkMobileSdk: NSObject {
     let MNEMONIC_STRENGTH = 24
     let SERVICE_KEY = "WALLET_STORAGE"
     let MNEMONIC_ACCOUNT_KEY = "BIP39_MNEMONIC"
 
-    @objc public func hello(
-        _ resolve: RCTPromiseResolveBlock,
-        rejecter reject: RCTPromiseRejectBlock
-    ) -> Void {
-        resolve("Hello World")
+    public func hello() -> String {
+        return "Hello World"
     }
     
-    @objc public func getBundleId(
-        _ resolve: RCTPromiseResolveBlock,
-        rejecter reject: RCTPromiseRejectBlock
-    ) -> Void {
-        resolve(Bundle.main.bundleIdentifier!)
+    public func getBundleId() -> String {
+        return Bundle.main.bundleIdentifier!
     }
     
-    @objc public func getMnemonic(
-      _ resolve: RCTPromiseResolveBlock,
-      rejecter reject: RCTPromiseRejectBlock
-    ) -> Void {
+    public func getMnemonic() -> String? {
         let mnemonicData = KeychainHelper.standard.read(service: SERVICE_KEY, account: MNEMONIC_ACCOUNT_KEY)
 
         if (mnemonicData == nil) {
-            resolve(nil)
+            return nil
         } else {
             let mnemonicString = String(data: mnemonicData!, encoding: .utf8)
-            resolve(mnemonicString)
+            return mnemonicString
         }
     }
     
-    @objc public func generateMnemonic(
-      _ resolve: RCTPromiseResolveBlock,
-      rejecter reject: RCTPromiseRejectBlock
-    ) -> Void {
+    public func generateMnemonic() -> String {
         var data = [UInt8](repeating: 0, count: MNEMONIC_STRENGTH)
         let result = SecRandomCopyBytes(kSecRandomDefault, data.count, &data)
         
@@ -43,45 +33,39 @@ class RlyNetworkMobileSdk: NSObject {
             let mnemonicString = String(cString: mnemonic_from_data(&data, CInt(MNEMONIC_STRENGTH)))
             
             if (mnemonic_check(mnemonicString) == 0) {
-                reject("mnemonic_generation_failure", "mnemonic failed to pass check", nil);
-                return;
+                return "failure";
+
             }
 
-            resolve(mnemonicString)
+            return mnemonicString
         } else {
-            reject("mnemonic_generation_failure", "failed to generate secure bytes", nil);
+            return "failure";
+            // reject("mnemonic_generation_failure", "failed to generate secure bytes", nil);
         }
     }
     
-    @objc public func saveMnemonic(
+    public func saveMnemonic(
       _ mnemonic: String,
       saveToCloud: Bool,
-      rejectOnCloudSaveFailure: Bool,
-      resolver resolve: RCTPromiseResolveBlock,
-      rejecter reject: RCTPromiseRejectBlock
-    ) -> Void {
+      rejectOnCloudSaveFailure: Bool
+    ) -> Bool {
         KeychainHelper.standard.save(mnemonic.data(using: .utf8)!, service: SERVICE_KEY, account: MNEMONIC_ACCOUNT_KEY, saveToCloud: saveToCloud);
-
-        resolve(true)
+        return true
     }
     
-    @objc public func deleteMnemonic(
-      _ resolve: RCTPromiseResolveBlock,
-      rejecter reject: RCTPromiseRejectBlock
-    ) -> Void {
+    public func deleteMnemonic() -> Bool {
         KeychainHelper.standard.delete(service: SERVICE_KEY, account: MNEMONIC_ACCOUNT_KEY)
 
-        resolve(true)
+        return true
     }
     
-    @objc public func getPrivateKeyFromMnemonic(
-      _ mnemonic: String,
-      resolver resolve: RCTPromiseResolveBlock,
-      rejecter reject: RCTPromiseRejectBlock
-    ) -> Void {
+    public func getPrivateKeyFromMnemonic(
+      _ mnemonic: String
+    ) -> Any{
         if (mnemonic_check(mnemonic) == 0) {
-            reject("mnemonic_verification_failure", "mnemonic failed to pass check", nil);
-            return;
+            return "failure";
+            // reject("mnemonic_verification_failure", "mnemonic failed to pass check", nil);
+            // return;
         }
         
         var seed = [UInt8](repeating: 0, count: (512 / 8));
@@ -105,6 +89,6 @@ class RlyNetworkMobileSdk: NSObject {
             pkey.append(i.value as! UInt8)
         }
         
-        resolve(pkey)
+        return pkey
     }
 }
