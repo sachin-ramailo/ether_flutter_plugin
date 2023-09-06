@@ -108,11 +108,7 @@ List<Map<String, Object>> getIForwarderABIData() {
             {"internalType": "uint256", "name": "gas", "type": "uint256"},
             {"internalType": "uint256", "name": "nonce", "type": "uint256"},
             {"internalType": "bytes", "name": "data", "type": "bytes"},
-            {
-              "internalType": "uint256",
-              "name": "validUntilTime",
-              "type": "uint256"
-            }
+            {"internalType": "uint256", "name": "validUntilTime", "type": "uint256"}
           ],
           "internalType": "struct IForwarder.ForwardRequest",
           "name": "forwardRequest",
