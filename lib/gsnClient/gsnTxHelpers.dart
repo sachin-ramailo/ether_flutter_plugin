@@ -58,7 +58,7 @@ import 'EIP712/typedSigning.dart';
       gtxDataNonZero,
       gtxDataZero,
     );
-    final adjustedGas = BigInt.parse(originalGas!,radix: 16) - BigInt.from(callDataCost);
+    final adjustedGas = BigInt.parse(originalGas!.substring(2),radix: 16) - BigInt.from(callDataCost);
 
     return '0x${adjustedGas.toRadixString(16)}';
   }
@@ -139,6 +139,7 @@ import 'EIP712/typedSigning.dart';
       function: forwarder.function("getNonce"),
       params: [sender],
     );
+
     // Extract the nonce value from the result and convert it to a string
     // if you go to getNonce method of IForwarderData.dart
     //there is only one output defined in the getNonce method
@@ -313,7 +314,7 @@ import 'EIP712/typedSigning.dart';
       data: uint8ListToHex(tx.data!) ,
       value: "0",
       to: faucet.address.hex,
-      gas: gas.toRadixString(16),
+      gas: "0x${gas.toRadixString(16)}",
       maxFeePerGas: maxFeePerGas!.toRadixString(16),
       maxPriorityFeePerGas: maxPriorityFeePerGas.toRadixString(16),
     );
