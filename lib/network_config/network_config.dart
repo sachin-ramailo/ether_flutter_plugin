@@ -8,6 +8,11 @@ class NetworkConfig {
     required this.gsn,
     this.relayerApiKey,
   });
+  @override
+  String toString() {
+    return 'NetworkConfig{contracts: ${contracts.toString()}, gsn: ${gsn.toString()}, relayerApiKey: $relayerApiKey}';
+  }
+
 }
 
 class Contracts {
@@ -18,6 +23,10 @@ class Contracts {
     required this.tokenFaucet,
     required this.rlyERC20,
   });
+  @override
+  String toString() {
+    return 'Contracts{tokenFaucet: $tokenFaucet, rlyERC20: $rlyERC20}';
+  }
 }
 
 class GSNConfig {
@@ -54,4 +63,8 @@ class GSNConfig {
     required this.maxApprovalDataLength,
     required this.maxRelayNonceGap,
   });
+  @override
+  String toString() {
+    return 'GSNConfig{paymasterAddress: $paymasterAddress, forwarderAddress: $forwarderAddress, relayHubAddress: $relayHubAddress, relayWorkerAddress: $relayWorkerAddress, relayUrl: $relayUrl, rpcUrl: $rpcUrl, chainId: $chainId, maxAcceptanceBudget: $maxAcceptanceBudget, domainSeparatorName: $domainSeparatorName, gtxDataZero: $gtxDataZero, gtxDataNonZero: $gtxDataNonZero, requestValidSeconds: $requestValidSeconds, maxPaymasterDataLength: $maxPaymasterDataLength, maxApprovalDataLength: $maxApprovalDataLength, maxRelayNonceGap: $maxRelayNonceGap}';
+  }
 }

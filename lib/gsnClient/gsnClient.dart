@@ -21,6 +21,9 @@ Future<Map<String, dynamic>> updateConfig(
   config.gsn.relayWorkerAddress = serverConfigUpdate.relayWorkerAddress;
   setGasFeesForTransaction(transaction,serverConfigUpdate);
 
+  printLog("Config =  = $config");
+  printLog("transaction =  = $transaction");
+
   return {'config': config, 'transaction': transaction};
 }
 
@@ -107,7 +110,7 @@ Future<String> relayTransaction(
   NetworkConfig config,
   GsnTransactionDetails transaction,
 ) async {
-getEthClient();
+
   final web3Provider = getEthClientForURL(config.gsn.rpcUrl);
   final updatedConfig = await updateConfig(config, transaction);
   final relayRequest = await buildRelayRequest(

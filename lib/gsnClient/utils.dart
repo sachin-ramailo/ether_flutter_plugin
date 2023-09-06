@@ -50,6 +50,11 @@ class GsnTransactionDetails {
     this.clientId,
     this.useGSN,
   });
+  @override
+  String toString() {
+    // TODO: implement toString
+    return 'from: $from, data: $data, to: $to, value: $value, gas: $gas, maxFeePerGas: $maxFeePerGas, maxPriorityFeePerGas: $maxPriorityFeePerGas, paymasterData: $paymasterData, clientId: $clientId, useGSN: $useGSN';
+  }
 }
 
 typedef PrefixedHexString = String;
