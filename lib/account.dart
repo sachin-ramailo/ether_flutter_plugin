@@ -44,14 +44,12 @@ class AccountsUtil {
       return _cachedWallet!;
     }
 
-    final mnemonic = await _keyManager.getMnemonic();
+    String? mnemonic = await _keyManager.getMnemonic();
     printLog('get mnemonic tested = $mnemonic');
 
-    if (mnemonic == null) {
-      throw "Mnemonic can't be null...";
-    }
+    mnemonic ??= await _keyManager.generateMnemonic();
 
-    final pkey = await _keyManager.makePrivateKeyFromMnemonic(mnemonic);
+    final pkey = await _keyManager.makePrivateKeyFromMnemonic(mnemonic!);
     printLog('privateKey = $pkey');
     final wallet = _makeWalletFromPrivateKey(pkey);
 
