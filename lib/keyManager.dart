@@ -50,16 +50,8 @@ class KeyManagerImpl extends KeyManager {
 
   @override
   Future<String?> getMnemonic() async {
-
     String? mnemonic = await methodChannel.invokeMethod<String>("getMnemonic");
-    printLog("get mnemonic = $mnemonic");
-
-    //TODO: ultimately this has to be done from native code
-    printLog("mnemonic = $mnemonic");
-    if (isStringEmpty(mnemonic)) {
-      mnemonic = await generateMnemonic();
-    }
-    printLog("mnemonic = $mnemonic");
+    printLog("native get mnemonic method called= $mnemonic");
     return mnemonic;
   }
 
