@@ -23,7 +23,7 @@ class AccountsUtil {
   }
 
   Future<String> createAccount({bool overwrite = false}) async {
-    final existingWallet = getWallet();
+    final existingWallet = await getWallet();
 
     if (existingWallet != null && !overwrite) {
       throw 'Account already exists';
