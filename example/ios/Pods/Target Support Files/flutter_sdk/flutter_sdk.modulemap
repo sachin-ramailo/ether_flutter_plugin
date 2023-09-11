@@ -1,0 +1,6 @@
+framework module flutter_sdk {
+  umbrella header "flutter_sdk-umbrella.h"
+
+  export *
+  module * { export * }
+}
