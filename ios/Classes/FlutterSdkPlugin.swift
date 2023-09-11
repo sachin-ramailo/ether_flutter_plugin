@@ -19,9 +19,6 @@ public class FlutterSdkPlugin: NSObject, FlutterPlugin {
     case "getPrivateKeyFromMnemonic":
       if let arguments = call.arguments as? [String: Any], let data = arguments["mnemonic"] as? String {
         result(RlyNetworkMobileSdk().getPrivateKeyFromMnemonic(data))
-    } else {
-        // Handle the case where 'arguments' or 'data' is nil
-        // You might want to return an error or a default value here.
     }
       case "getMnemonic":
         result(RlyNetworkMobileSdk().getMnemonic())
