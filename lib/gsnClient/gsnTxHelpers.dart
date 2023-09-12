@@ -153,8 +153,14 @@ import 'EIP712/typedSigning.dart';
     String domainSeparatorName,
     String chainId,
     Wallet account,
-      NetworkConfig config,
+    NetworkConfig config,
   ) async {
+
+    printLog("domain - ${domainSeparatorName}");
+    printLog("chainId - ${chainId}");
+    printLog("account - ${account.privateKey.address}");
+    printLog("config - ${config}");
+
     final cloneRequest ={
       "request": ForwardRequest(
         from: relayRequest.request.from,
@@ -189,9 +195,9 @@ import 'EIP712/typedSigning.dart';
     // Define the domain separator
     final domainSeparator = {
       'name': domainSeparatorName,
-      'version': '1.0',
+      'version': '3',
       'chainId': chainId, // Ethereum Mainnet chain ID
-      'verifyingContract': config.contracts.tokenFaucet,
+      'verifyingContract': config.gsn.forwarderAddress,
     };
 
 // Define the types and primary type
@@ -203,11 +209,6 @@ import 'EIP712/typedSigning.dart';
         {'name': 'verifyingContract', 'type': 'address'},
       ],
       'RelayRequest': [
-        // Define fields for RelayRequest
-        {'name': 'forwardRequest', 'type': 'ForwardRequest'},
-        {'name': 'relayData', 'type': 'RelayData'},
-      ],
-      'ForwardRequest': [
         // Define fields for ForwardRequest
         {'name': 'from', 'type': 'address'},
         {'name': 'to', 'type': 'address'},
@@ -216,6 +217,7 @@ import 'EIP712/typedSigning.dart';
         {'name': 'nonce', 'type': 'uint256'},
         {'name': 'data', 'type': 'bytes'},
         {'name': 'validUntilTime', 'type': 'uint256'},
+        {"name": "relayData", "type": "RelayData"}
       ],
       'RelayData': [
         // Define fields for RelayData
@@ -234,7 +236,7 @@ import 'EIP712/typedSigning.dart';
 
 // Define the message data
     final messageData = {
-      'forwardRequest': relayRequest.request.toMap(),
+      ...relayRequest.request.toMap(),
       'relayData': relayRequest.relayData.toMap(),
     };
 

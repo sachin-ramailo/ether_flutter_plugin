@@ -79,7 +79,7 @@ Future<Map<String, dynamic>> buildRelayHttpRequest(
     account,
     config
   );
-
+  printLog("signature = $signature");
   const approvalData = '0x';
 
 
