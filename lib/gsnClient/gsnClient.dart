@@ -146,7 +146,10 @@ for(MapEntry entry in httpRequest.entries){
 printLog("end printing http request");
   final res = await http.post(
     Uri.parse('${config.gsn.relayUrl}/relay'),
-    headers: authHeader,
+    headers: {
+      'Content-Type': 'application/json', // Specify the content type as JSON
+      ...authHeader, // Assuming authHeader is a map of headers you want to include
+    },
     body: json.encode(httpRequest),
   );
   return handleGsnResponse(res, web3Provider);
