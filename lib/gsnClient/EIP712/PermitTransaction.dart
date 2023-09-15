@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:eth_sig_util/eth_sig_util.dart';
+import 'package:eth_sig_util/util/utils.dart';
 import 'package:flutter_sdk/utils/constants.dart';
 import 'package:web3dart/web3dart.dart';
 
@@ -122,19 +123,18 @@ Future<bool> hasPermit(
   try {
     final token = erc20(contractAddress);
 
-    final nameCall =  await provider.call(
-        contract: token, function: token.function('name'), params: []);
+    final nameCall = await provider
+        .call(contract: token, function: token.function('name'), params: []);
     final name = nameCall[0];
-
-    final eip712Domain = await provider.call(
-        contract: token, function: token.function('eip712Domain'), params: []);
-
-    final noncesFunctionCall =  await provider.call(
-        contract: token, function: token.function('nonces'), params: [account.privateKey.address]);
+    final noncesFunctionCall = await provider.call(
+        contract: token,
+        function: token.function('nonces'),
+        params: [account.privateKey.address]);
     final nonce = noncesFunctionCall[0];
 
     final deadline = await getPermitDeadline(provider);
-
+    final eip712Domain = await provider.call(
+        contract: token, function: token.function('eip712Domain'), params: []);
 
     final salt =
         /*5 is hardcoded here because in the erc20 json,
@@ -229,20 +229,29 @@ Future<GsnTransactionDetails> getPermitTx(
   Web3Client provider,
 ) async {
   final token = erc20(contractAddress);
+  final noncesCallResult = await provider.call(
+      contract: token,
+      function: token.function("nonces"),
+      params: [EthereumAddress.fromHex(account.privateKey.address.hex)]);
+
   final name = token.abi.name;
-  final nonce = await provider.getTransactionCount(
-      EthereumAddress.fromHex(account.privateKey.address.hex));
-  final decimals = await provider
-      .getBalance(EthereumAddress.fromHex(account.privateKey.address.hex));
+  final nonce = noncesCallResult[0];
+  // final nonce = await provider.getTransactionCount(
+  //     EthereumAddress.fromHex(account.privateKey.address.hex));
+  final decimalsCallResult = await provider
+      .call(contract: token, function: token.function("decimals"), params: []);
+  final decimals = decimalsCallResult[0];
+  printLog("decimals units  =${bytesToHex(decimals)}");
+
   final deadline = await getPermitDeadline(provider);
-  final eip712Domain = await provider.call(
+  final eip712DomainCallResult = await provider.call(
       contract: token, function: token.function('eip712Domain'), params: []);
 
   final salt =
       /*5 is hardcoded here because in the erc20 json,
     the salt appears on 5th index in outputs
     of function eip712Domain*/
-      eip712Domain[5] as String;
+      eip712DomainCallResult[5] as String;
 
   final decimalAmount =
       EtherAmount.fromBase10String(EtherUnit.ether, amount.toString());
@@ -305,5 +314,5 @@ Future<GsnTransactionDetails> getPermitTx(
 Future<BigInt> getPermitDeadline(Web3Client provider) async {
   final block = await provider.getBlockInformation();
   return BigInt.from(
-      block.timestamp.add(Duration(seconds: 45)).millisecondsSinceEpoch);
+      block.timestamp.add(const Duration(seconds: 45)).millisecondsSinceEpoch);
 }

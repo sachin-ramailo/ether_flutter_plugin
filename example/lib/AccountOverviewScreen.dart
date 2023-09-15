@@ -19,8 +19,8 @@ class AccountOverviewScreen extends StatefulWidget {
 class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
   bool loading = false;
   double? balance;
-  String transferBalance = '0.1';
-  String transferAddress = '0x8003b6241dEEE73Db1DbEfa63A224D6ebc493498';
+  String transferBalance = '4';
+  String transferAddress = '0x5205BcC1852c4b626099aa7A2AFf36Ac3e9dE83b';
   String? mnemonic;
 
   void fetchBalance() async {
@@ -40,7 +40,10 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
   void initState() {
     super.initState();
     fetchBalance();
-    RlyNetwork.setApiKey("eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOjEzNX0.wqnX-E-KRvzqLgIBAw6RV-BT1puWuZgVdAsqxoU1nL2z8hxTkT4OlH7G6Okv9l3qRMLxMbkORg14XTko-gJW1A");
+    // RlyNetwork.setApiKey(
+    //     "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOjEzNX0.wqnX-E-KRvzqLgIBAw6RV-BT1puWuZgVdAsqxoU1nL2z8hxTkT4OlH7G6Okv9l3qRMLxMbkORg14XTko-gJW1A");
+    RlyNetwork.setApiKey(
+        "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOjkzfQ.PgErzRN88Sz07OKp9aj0cUxCap_chaqTsDzgkaIc7NMC_WSPeL4HUlmSb_spHe5N_Gk7EYsF-1QFXg-rIp7ETA");
   }
 
   void claimRlyTokens() async {
@@ -74,7 +77,8 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
       loading = true;
     });
 
-    final txnId = await RlyNetwork.simpleTransfer(transferAddress, double.parse(transferBalance));
+    final txnId = await RlyNetwork.simpleTransfer(
+        transferAddress, double.parse(transferBalance));
     printLog('TXN ID for sending tokens = $txnId');
 
     fetchBalance();
@@ -85,8 +89,9 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
       loading = false;
     });
   }
+
   void deleteAccount() async {
-     AccountsUtil.getInstance().permanentlyDeleteAccount();
+    AccountsUtil.getInstance().permanentlyDeleteAccount();
   }
 
   void revealMnemonic() async {

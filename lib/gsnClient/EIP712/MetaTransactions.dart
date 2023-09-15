@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:eth_sig_util/eth_sig_util.dart';
+import 'package:eth_sig_util/util/utils.dart';
 import 'package:flutter_sdk/contracts/erc20.dart';
 import 'package:flutter_sdk/gsnClient/gsnTxHelpers.dart';
 import 'package:flutter_sdk/gsnClient/utils.dart';
@@ -31,24 +32,34 @@ class MetaTransaction {
   });
 }
 
-Map<String, dynamic> getTypedMetatransaction(MetaTransaction transaction) {
+Map<String, dynamic> getTypedMetatransaction(MetaTransaction metaTransaction) {
   return {
-    "types": [
-        {"name": "nonce", "type": "uint256"},
-        {"name": "from", "type": "address"},
-        {"name": "functionSignature", "type": "bytes"},
+    'types': {
+      'EIP712Domain': [
+        {'name': 'name', 'type': 'string'},
+        {'name': 'version', 'type': 'string'},
+        {'name': 'chainId', 'type': 'uint256'},
+        {'name': 'verifyingContract', 'type': 'address'},
       ],
-    "domain": {
-      "name": transaction.name,
-      "version": transaction.version,
-      "verifyingContract": transaction.verifyingContract,
-      "salt": transaction.salt,
+      'MetaTransaction': [
+        {'name': 'nonce', 'type': 'uint256'},
+        {'name': 'from', 'type': 'address'},
+        {'name': 'functionSignature', 'type': 'bytes'},
+      ],
     },
-    "primaryType": "MetaTransaction",
-    "message": {
-      "nonce": transaction.nonce,
-      "from": transaction.from,
-      "functionSignature": transaction.functionSignature,
+    'domain': {
+      'name': metaTransaction.name,
+      'version': metaTransaction.version,
+      //TODO: remove hardcoding
+      'chainId': "80001",
+      'verifyingContract': metaTransaction.verifyingContract,
+      'salt': metaTransaction.salt,
+    },
+    'primaryType': 'MetaTransaction',
+    'message': {
+      'nonce': metaTransaction.nonce,
+      'from': metaTransaction.from,
+      'functionSignature': metaTransaction.functionSignature,
     },
   };
 }
@@ -69,7 +80,7 @@ Future<Map<String, dynamic>> getMetatransactionEIP712Signature(
     MetaTransaction(
       name: contractName,
       version: '1',
-      salt: hexZeroPad(int.parse(chainId),32),
+      salt: hexZeroPad(int.parse(chainId), 32),
       // Padding the chainId with zeroes to make it 32 bytes
       verifyingContract: contractAddress,
       nonce: nonce,
@@ -79,15 +90,18 @@ Future<Map<String, dynamic>> getMetatransactionEIP712Signature(
   );
 
   // signature for metatransaction
-  // signature for metatransaction
   final String signature = EthSigUtil.signTypedData(
-      jsonData: jsonEncode(eip712Data), version: TypedDataVersion.V1);
+    jsonData: jsonEncode(eip712Data),
+    version: TypedDataVersion.V4,
+    privateKey: account.privateKey.address.hex,
+  );
   // get r,s,v from signature
-  final signatureBytes = hex.decode(signature);
+  final signatureBytes = hexToBytes(signature);
+
   return {
-    'r': '0x${hex.encode(signatureBytes.sublist(0, 32))}',
-    's': '0x${hex.encode(signatureBytes.sublist(32, 64))}',
-    'v': signatureBytes[64] + 27,
+    'r': signatureBytes.sublist(0, 32),
+    's': signatureBytes.sublist(32, 64),
+    'v': signatureBytes[64],
   };
 }
 
@@ -96,7 +110,6 @@ String hexZeroPad(int number, int length) {
   final paddedHexString = hexString.padLeft(length * 2, '0');
   return '0x$paddedHexString';
 }
-
 
 Future<bool> hasExecuteMetaTransaction(
   Wallet account,
@@ -118,11 +131,11 @@ Future<bool> hasExecuteMetaTransaction(
     final funCall = await provider.call(
         contract: token, function: token.function("decimals"), params: []);
     final decimals = funCall[0];
-    final decimalAmount = parseUnits(amount.toString(), int.parse(decimals.toString()));
+    final decimalAmount =
+        parseUnits(amount.toString(), int.parse(decimals.toString()));
 
-    final data = token
-        .function('transfer')
-        .encodeCall([EthereumAddress.fromHex(destinationAddress), decimalAmount]);
+    final data = token.function('transfer').encodeCall(
+        [EthereumAddress.fromHex(destinationAddress), decimalAmount]);
 
     final signatureData = await getMetatransactionEIP712Signature(
       account,
@@ -133,17 +146,20 @@ Future<bool> hasExecuteMetaTransaction(
       nonce.toInt(),
     );
 
-    final executeMetaTransactionFunction = token.function('executeMetaTransaction');
+    final executeMetaTransactionFunction =
+        token.function('executeMetaTransaction');
 
-    await provider
-        .call(contract: token, function: executeMetaTransactionFunction, params: [
-      account.privateKey.address,
-      data,
-      signatureData['r'],
-      signatureData['s'],
-      signatureData['v'],
-      {"from": account.privateKey.address}
-    ]);
+    await provider.call(
+        contract: token,
+        function: executeMetaTransactionFunction,
+        params: [
+          account.privateKey.address,
+          data,
+          signatureData['r'],
+          signatureData['s'],
+          signatureData['v'],
+          {"from": account.privateKey.address}
+        ]);
 
     return true;
   } catch (e) {
@@ -162,71 +178,81 @@ Future<GsnTransactionDetails> getExecuteMetatransactionTx(
   //TODO: Once things are stable, think about refactoring
   // to avoid code duplication
   final token = erc20(contractAddress);
-  final name = token.abi.name;
-  final nonce = await provider.getTransactionCount(token.address);
-  // final decimalAmount = BigInt.from(amount) * BigInt.from(10).pow(decimals);
-  final decimalAmount = BigInt.from(amount) * BigInt.from(10);
+
+  final nameCallResult = await provider
+      .call(contract: token, function: token.function('name'), params: []);
+  final name = nameCallResult.first;
+
+  final nonce =
+      await getSenderContractNonce(provider, token, account.privateKey.address);
+  final decimals = await provider
+      .call(contract: token, function: token.function('decimals'), params: []);
+
+  BigInt decimalAmount =
+      parseUnits(amount.toString(), int.parse(decimals.first.toString()));
 
   // get function signature
-  final data = await provider.call(
-      contract: token,
-      function: token.function("transfer"),
-      params: [EthereumAddress.fromHex(destinationAddress), decimalAmount]);
+  final transferFunc = token.function('transfer');
+  final data = transferFunc
+      .encodeCall([EthereumAddress.fromHex(destinationAddress), decimalAmount]);
 
   final signatureData = await getMetatransactionEIP712Signature(
     account,
     name,
     contractAddress,
-    data[0],
+    data,
     config,
     nonce.toInt(),
   );
 
-  final r = hex.decode(signatureData['r']);
-  final s = hex.decode(signatureData['s']);
+  final r = signatureData['r'];
+  final s = signatureData['s'];
   final v = signatureData['v'];
-  final tx = await provider.call(
-      contract: token,
-      function: token.function("executeMetaTransaction"),
-      params: [
-        EthereumAddress.fromHex(account.privateKey.address.hex),
-        data,
-        v,
-        r,
-        s
-      ]);
 
-  // final gas = await _estimateGasForMetaTransaction(
-  //   token,
-  //   EthereumAddress.fromHex(account.privateKey.address.hex),
-  //   EthereumAddress.fromHex(config.gsn.paymasterAddress),
-  //   decimalAmount,
-  //   signatureData['v'],
-  //   signatureData['r'],
-  //   signatureData['s'],
-  //   EthereumAddress.fromHex(account.privateKey.address.hex),
-  //   'executeMetaTransaction',
+  final tx = Transaction.callContract(
+    contract: token,
+    function: token.function('executeMetaTransaction'),
+    parameters: [
+      account.privateKey.address,
+      data,
+      r,
+      s,
+      //TODO: is this correct?
+      BigInt.from(v),
+    ],
+  );
+
+  provider.estimateGas();
+
+  // final gas = Transaction.callContract(
+  //   contract: token,
+  //   function: token.function("estimateGas"),
+  //   par ameters: [
+  //     account.privateKey.address,
+  //     data,
+  //     r,
+  //     s,
+  //     v,
+  //     {"from": account.privateKey.address}
+  //   ],
   // );
 
-  //following code is inspired from getFeeData method of
-  //abstrac-provider of ethers js library
-  final EtherAmount gasPrice = await provider.getGasPrice();
+  final info = await provider.getBlockInformation();
+
   final BigInt maxPriorityFeePerGas = BigInt.parse("1500000000");
   final maxFeePerGas =
-      gasPrice.getInWei * BigInt.from(2) + (maxPriorityFeePerGas);
-  if (tx == null || tx.isEmpty) {
+      info.baseFeePerGas!.getInWei * BigInt.from(2) + (maxPriorityFeePerGas);
+  if (tx == null) {
     throw 'tx not populated';
   }
 
   final gsnTx = GsnTransactionDetails(
     from: account.privateKey.address.hex,
-    data: tx[0],
+    data: bytesToHex(tx.data!),
     value: "0",
-    to: token.address.hex,
-    /* from the populateTransaction method of index.ts of ethers,
-    we know that the to address here is the address of the contract*/
-    // gas: '0x${gas.toHexString()}',
-    gas: 'example',
+    to: tx.to!.hex,
+    //TODO: Remove hardcoding
+    gas: "0x0128d4",
     maxFeePerGas: maxFeePerGas.toString(),
     maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
   );

@@ -10,16 +10,16 @@ import 'package:flutter_sdk/gsnClient/gsnTxHelpers.dart';
 import '../network_config/network_config.dart';
 import 'EIP712/RelayRequest.dart';
 
-
 Future<Map<String, dynamic>> updateConfig(
   NetworkConfig config,
   GsnTransactionDetails transaction,
 ) async {
-  final response = await http.get(Uri.parse('${config.gsn.relayUrl}/getaddr'),headers: authHeader(config));
+  final response = await http.get(Uri.parse('${config.gsn.relayUrl}/getaddr'),
+      headers: authHeader(config));
   final serverConfigUpdate = GsnServerConfigPayload.fromJson(response.body);
 
   config.gsn.relayWorkerAddress = serverConfigUpdate.relayWorkerAddress;
-  setGasFeesForTransaction(transaction,serverConfigUpdate);
+  setGasFeesForTransaction(transaction, serverConfigUpdate);
 
   printLog("Config =  = $config");
   printLog("transaction =  = $transaction");
@@ -30,7 +30,9 @@ Future<Map<String, dynamic>> updateConfig(
 Future<RelayRequest> buildRelayRequest(
   GsnTransactionDetails transaction,
   NetworkConfig config,
-  Wallet account, Web3Client  web3Provider,) async {
+  Wallet account,
+  Web3Client web3Provider,
+) async {
   transaction.gas = estimateGasWithoutCallData(
     transaction,
     config.gsn.gtxDataNonZero,
@@ -46,20 +48,34 @@ Future<RelayRequest> buildRelayRequest(
     EthereumAddress.fromHex(config.gsn.forwarderAddress),
     web3Provider,
   );
-ForwardRequest forwardRequest = ForwardRequest(from: transaction.from, to: transaction.to,
-    value: transaction.value ?? '0', gas: int.parse(transaction.gas!.substring(2), radix: 16).toString(), nonce: senderNonce,
-    data: transaction.data, validUntilTime: validUntilTime,);
-  RelayData relayData = RelayData(maxFeePerGas: transaction.maxFeePerGas, maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
+  ForwardRequest forwardRequest = ForwardRequest(
+    from: transaction.from,
+    to: transaction.to,
+    value: transaction.value ?? '0',
+    gas: int.parse(transaction.gas!.substring(2), radix: 16).toString(),
+    nonce: senderNonce,
+    data: transaction.data,
+    validUntilTime: validUntilTime,
+  );
+  RelayData relayData = RelayData(
+      maxFeePerGas: transaction.maxFeePerGas,
+      maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
       transactionCalldataGasUsed: '',
-      relayWorker: config.gsn.relayWorkerAddress, paymaster: config.gsn.paymasterAddress,
-      paymasterData: (transaction.paymasterData != null) ? transaction.paymasterData.toString() : '0x',
-      clientId: '1', forwarder: config.gsn.forwarderAddress);
+      relayWorker: config.gsn.relayWorkerAddress,
+      paymaster: config.gsn.paymasterAddress,
+      paymasterData: (transaction.paymasterData != null)
+          ? transaction.paymasterData.toString()
+          : '0x',
+      clientId: '1',
+      forwarder: config.gsn.forwarderAddress);
 
-  RelayRequest relayRequest = RelayRequest(request: forwardRequest, relayData: relayData);
+  RelayRequest relayRequest =
+      RelayRequest(request: forwardRequest, relayData: relayData);
 
-  final transactionCalldataGasUsed =
-      await estimateCalldataCostForRequest(relayRequest, config.gsn,web3Provider);
-      printLog("result of estimateCalldataCostForRequest =  $transactionCalldataGasUsed ");
+  final transactionCalldataGasUsed = await estimateCalldataCostForRequest(
+      relayRequest, config.gsn, web3Provider);
+  printLog(
+      "result of estimateCalldataCostForRequest =  $transactionCalldataGasUsed ");
   relayRequest.relayData.transactionCalldataGasUsed =
       int.parse(transactionCalldataGasUsed, radix: 16).toString();
 
@@ -72,19 +88,15 @@ Future<Map<String, dynamic>> buildRelayHttpRequest(
   Wallet account,
   Web3Client web3Provider,
 ) async {
-  final signature = await signRequest(
-    relayRequest,
-    config.gsn.domainSeparatorName,
-    config.gsn.chainId,
-    account,
-    config
-  );
+  final signature = await signRequest(relayRequest,
+      config.gsn.domainSeparatorName, config.gsn.chainId, account, config);
   printLog("signature = $signature");
   const approvalData = '0x';
 
-
-  final relayWorkerAddress = EthereumAddress.fromHex(relayRequest.relayData.relayWorker);
-  final relayLastKnownNonce = await web3Provider.getTransactionCount(relayWorkerAddress);
+  final relayWorkerAddress =
+      EthereumAddress.fromHex(relayRequest.relayData.relayWorker);
+  final relayLastKnownNonce =
+      await web3Provider.getTransactionCount(relayWorkerAddress);
   final relayMaxNonce = relayLastKnownNonce + config.gsn.maxRelayNonceGap;
 
   final metadata = {
@@ -110,7 +122,6 @@ Future<String> relayTransaction(
   NetworkConfig config,
   GsnTransactionDetails transaction,
 ) async {
-
   final web3Provider = getEthClientForURL(config.gsn.rpcUrl);
   final updatedConfig = await updateConfig(config, transaction);
   final relayRequest = await buildRelayRequest(
@@ -130,6 +141,7 @@ Future<String> relayTransaction(
     httpRequest['relayRequest'],
     httpRequest['metadata']['signature'],
   );
+  printLog("relayRequestId = $relayRequestId");
 
   // Update request metadata with relayrequestid
   httpRequest['metadata']['relayRequestId'] = relayRequestId;
@@ -139,11 +151,11 @@ Future<String> relayTransaction(
   };
 
   printLog('httpRequest = $httpRequest');
-  printLog("Start printi\||\\ng http request");
-for(MapEntry entry in httpRequest.entries){
-  printLog("${entry.key} :-> ${entry.value}");
-}
-printLog("end printing http request");
+  printLog("Start printing http request");
+  for (MapEntry entry in httpRequest.entries) {
+    printLog("${entry.key} :-> ${entry.value}");
+  }
+  printLog("end printing http request");
   final res = await http.post(
     Uri.parse('${config.gsn.relayUrl}/relay'),
     headers: {
@@ -162,14 +174,13 @@ Map<String, String> authHeader(NetworkConfig config) {
 }
 
 void setGasFeesForTransaction(
-    GsnTransactionDetails transaction,
-    GsnServerConfigPayload serverConfigUpdate,
-    ) {
+  GsnTransactionDetails transaction,
+  GsnServerConfigPayload serverConfigUpdate,
+) {
   final serverSuggestedMinPriorityFeePerGas =
-  int.parse(serverConfigUpdate.minMaxPriorityFeePerGas, radix: 10);
+      int.parse(serverConfigUpdate.minMaxPriorityFeePerGas, radix: 10);
 
-  final paddedMaxPriority =
-  (serverSuggestedMinPriorityFeePerGas * 1.4).round();
+  final paddedMaxPriority = (serverSuggestedMinPriorityFeePerGas * 1.4).round();
   transaction.maxPriorityFeePerGas = paddedMaxPriority.toString();
 
   // Special handling for mumbai because of quirk with gas estimate returned by GSN for mumbai
@@ -179,7 +190,6 @@ void setGasFeesForTransaction(
     transaction.maxFeePerGas = serverConfigUpdate.maxMaxFeePerGas;
   }
 }
-
 
 class GsnServerConfigPayload {
   final String relayWorkerAddress;

@@ -12,7 +12,7 @@ import '../gsnClient/EIP712/PermitTransaction.dart';
 import '../gsnClient/gsnClient.dart';
 import '../network_config/network_config.dart';
 
-class NetworkImpl extends Network{
+class NetworkImpl extends Network {
   NetworkConfig network;
 
   NetworkImpl(this.network);
@@ -52,10 +52,14 @@ class NetworkImpl extends Network{
     //TODO: we have to use this provider to make this erc20 contract
     // final token = erc20(provider,tokenAddress);
     final token = erc20(tokenAddress);
-    final funCall = await provider.call(contract: token, function: token.function("decimals"), params: []);
+    final funCall = await provider.call(
+        contract: token, function: token.function("decimals"), params: []);
     final decimals = funCall[0];
 
-    final balanceOfCall = await provider.call(contract: token, function: token.function('balanceOf'), params: [account.privateKey.address]);
+    final balanceOfCall = await provider.call(
+        contract: token,
+        function: token.function('balanceOf'),
+        params: [account.privateKey.address]);
     final balance = balanceOfCall[0];
     return formatUnits(balance, decimals);
   }
@@ -78,16 +82,14 @@ class NetworkImpl extends Network{
 
   double formatUnits(BigInt wei, BigInt decimals) {
     final etherUnit = EtherUnit.gwei;
-    final balanceFormatted = EtherAmount.fromBigInt(etherUnit, wei)
-        .getValueInUnit(EtherUnit.gwei);
+    final balanceFormatted =
+        EtherAmount.fromBigInt(etherUnit, wei).getValueInUnit(EtherUnit.gwei);
     return balanceFormatted;
   }
 
-
-
   @override
-  Future<String> transfer(String destinationAddress, double amount, {PrefixedHexString? tokenAddress, MetaTxMethod? metaTxMethod})
-  async {
+  Future<String> transfer(String destinationAddress, double amount,
+      {PrefixedHexString? tokenAddress, MetaTxMethod? metaTxMethod}) async {
     final account = await AccountsUtil.getInstance().getWallet();
 
     tokenAddress = tokenAddress ?? network.contracts.rlyERC20;
@@ -107,7 +109,7 @@ class NetworkImpl extends Network{
     final provider = getEthClientForURL(network.gsn.rpcUrl);
 
     GsnTransactionDetails? transferTx;
-
+    metaTxMethod = MetaTxMethod.ExecuteMetaTransaction;
     if (metaTxMethod != null &&
         (metaTxMethod == MetaTxMethod.Permit ||
             metaTxMethod == MetaTxMethod.ExecuteMetaTransaction)) {
@@ -121,6 +123,7 @@ class NetworkImpl extends Network{
           provider,
         );
       } else {
+        printLog("From address = ${account.privateKey.address.hex}");
         transferTx = await getExecuteMetatransactionTx(
           account,
           destinationAddress,
@@ -167,7 +170,7 @@ class NetworkImpl extends Network{
     return relay(transferTx!);
   }
 
-  // This method is deprecated. Update to 'claimRly' instead.
+  // This method is deprecated. Update to 'c laimRly' instead.
 // Will be removed in future library versions.
   Future<String> registerAccount() async {
     print("This method is deprecated. Update to 'claimRly' instead.");
@@ -175,20 +178,20 @@ class NetworkImpl extends Network{
   }
 
   @override
-  Future<String> simpleTransfer(String destinationAddress, double amount, {String? tokenAddress, MetaTxMethod? metaTxMethod}) async {
-  Web3Client client = getEthClient();
-  final account = await AccountsUtil.getInstance().getWallet();
+  Future<String> simpleTransfer(String destinationAddress, double amount,
+      {String? tokenAddress, MetaTxMethod? metaTxMethod}) async {
+    Web3Client client = getEthClient();
+    final account = await AccountsUtil.getInstance().getWallet();
 
-  final result = await client.sendTransaction(
-      account.privateKey,
-    Transaction(
-      to: EthereumAddress.fromHex('0x39cc7b9f44cf39f3fd53a91db57670096c4c3e4f'),
-      gasPrice: EtherAmount.fromInt(EtherUnit.wei,1000000),
-      value: EtherAmount.fromBigInt(EtherUnit.gwei, BigInt.from(3)),
-    ),
-    chainId: 80001
-  );
-  return result;
+    final result = await client.sendTransaction(
+        account.privateKey,
+        Transaction(
+          to: EthereumAddress.fromHex(
+              '0x39cc7b9f44cf39f3fd53a91db57670096c4c3e4f'),
+          gasPrice: EtherAmount.fromInt(EtherUnit.wei, 1000000),
+          value: EtherAmount.fromBigInt(EtherUnit.gwei, BigInt.from(3)),
+        ),
+        chainId: 80001);
+    return result;
   }
-
 }
