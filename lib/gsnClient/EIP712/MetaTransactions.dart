@@ -73,14 +73,16 @@ Future<Map<String, dynamic>> getMetatransactionEIP712Signature(
   int nonce,
 ) async {
   // name and chainId to be used in EIP712
-  final chainId = config.gsn.chainId;
-
+  final chainId = int.parse(config.gsn.chainId);
+  String saltHexString = '0x${chainId.toRadixString(16)}';
+  String paddedSaltHexString = saltHexString.padLeft(66, '0');
+  printLog("paddedSaltHexString = $paddedSaltHexString");
   // typed data for signing
   final eip712Data = getTypedMetatransaction(
     MetaTransaction(
       name: contractName,
       version: '1',
-      salt: hexZeroPad(int.parse(chainId), 32),
+      salt: paddedSaltHexString,
       // Padding the chainId with zeroes to make it 32 bytes
       verifyingContract: contractAddress,
       nonce: nonce,
@@ -88,21 +90,28 @@ Future<Map<String, dynamic>> getMetatransactionEIP712Signature(
       functionSignature: functionSignature,
     ),
   );
-
   // signature for metatransaction
   final String signature = EthSigUtil.signTypedData(
     jsonData: jsonEncode(eip712Data),
     version: TypedDataVersion.V4,
-    privateKey: account.privateKey.address.hex,
+    privateKey: bytesToHex(account.privateKey.privateKey),
   );
+
+  printLog("\n\nsignature from meta txn class = $signature\n\n");
+
   // get r,s,v from signature
   final signatureBytes = hexToBytes(signature);
 
-  return {
+  Map<String, dynamic> rsv = {
     'r': signatureBytes.sublist(0, 32),
     's': signatureBytes.sublist(32, 64),
     'v': signatureBytes[64],
   };
+  printLog('r = ${rsv['r']}');
+  printLog('s = ${rsv['s']}');
+  printLog('v = ${rsv['v']}');
+
+  return rsv;
 }
 
 String hexZeroPad(int number, int length) {
@@ -222,20 +231,13 @@ Future<GsnTransactionDetails> getExecuteMetatransactionTx(
     ],
   );
 
-  provider.estimateGas();
-
-  // final gas = Transaction.callContract(
-  //   contract: token,
-  //   function: token.function("estimateGas"),
-  //   par ameters: [
-  //     account.privateKey.address,
-  //     data,
-  //     r,
-  //     s,
-  //     v,
-  //     {"from": account.privateKey.address}
-  //   ],
-  // );
+  // Estimate the gas required for the transaction
+  final gas = await provider.estimateGas(
+    sender: account.privateKey.address,
+    data: tx.data,
+    to: EthereumAddress.fromHex(destinationAddress),
+  );
+  printLog("gas estimate: 0x${gas.toRadixString(16)}");
 
   final info = await provider.getBlockInformation();
 
@@ -252,7 +254,7 @@ Future<GsnTransactionDetails> getExecuteMetatransactionTx(
     value: "0",
     to: tx.to!.hex,
     //TODO: Remove hardcoding
-    gas: "0x0128d4",
+    gas: "0x${gas.toRadixString(16)}",
     maxFeePerGas: maxFeePerGas.toString(),
     maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
   );
