@@ -38,8 +38,8 @@ Map<String, dynamic> getTypedMetatransaction(MetaTransaction metaTransaction) {
       'EIP712Domain': [
         {'name': 'name', 'type': 'string'},
         {'name': 'version', 'type': 'string'},
-        {'name': 'chainId', 'type': 'uint256'},
         {'name': 'verifyingContract', 'type': 'address'},
+        {'name': 'salt', 'type': 'string'},
       ],
       'MetaTransaction': [
         {'name': 'nonce', 'type': 'uint256'},
@@ -50,8 +50,6 @@ Map<String, dynamic> getTypedMetatransaction(MetaTransaction metaTransaction) {
     'domain': {
       'name': metaTransaction.name,
       'version': metaTransaction.version,
-      //TODO: remove hardcoding
-      'chainId': "80001",
       'verifyingContract': metaTransaction.verifyingContract,
       'salt': metaTransaction.salt,
     },
