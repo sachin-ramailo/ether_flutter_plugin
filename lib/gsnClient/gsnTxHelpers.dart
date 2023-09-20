@@ -8,7 +8,7 @@ import 'package:flutter_sdk/contracts/tokenFaucet.dart';
 import 'package:flutter_sdk/gsnClient/ABI/IForwarder.dart';
 import 'package:flutter_sdk/utils/constants.dart';
 import 'package:web3dart/crypto.dart';
-
+import 'package:http/http.dart';
 import 'package:flutter_sdk/gsnClient/ABI/IRelayHub.dart';
 
 import 'package:flutter_sdk/gsnClient/utils.dart';
@@ -254,7 +254,7 @@ Future<String> signRequest(
 // Sign the data using ethsigutil.signTypedData
   final signature = EthSigUtil.signTypedData(
     jsonData: jsonEncode(jsonData),
-    privateKey: bytesToHex(account.privateKey.privateKey),
+    privateKey: "0x${bytesToHex(account.privateKey.privateKey)}",
     version: TypedDataVersion.V4,
   );
 
@@ -343,26 +343,29 @@ Future<String> getBundleIdFromNativeModule() {
 }
 
 Future<String> handleGsnResponse(
-  dynamic res,
+  Response res,
   Web3Client ethClient,
 ) async {
-  if (res.data['error'] != null) {
-    throw {
-      'message': 'RelayError',
-      'details': res.data['error'],
-    };
-  } else {
-    final txHash = keccak256(res.data['signedTx']).toString();
-    // Poll for the transaction receipt until it's confirmed
-    TransactionReceipt? receipt;
-    do {
-      receipt = await ethClient.getTransactionReceipt(txHash);
-      if (receipt == null) {
-        await Future.delayed(Duration(seconds: 2)); // Wait for 2 seconds
-      }
-    } while (receipt == null);
-    return txHash;
-  }
+  printLog("res.body  = ${res.body}");
+  printLog("res.bodyBytes  = ${res.bodyBytes}");
+  return "TODO: return txnhash";
+  // if (res.data['error'] != null) {
+  //   throw {
+  //     'message': 'RelayError',
+  //     'details': res.data['error'],
+  //   };
+  // } else {
+  //   final txHash = keccak256(res.data['signedTx']).toString();
+  //   // Poll for the transaction receipt until it's confirmed
+  //   TransactionReceipt? receipt;
+  //   do {
+  //     receipt = await ethClient.getTransactionReceipt(txHash);
+  //     if (receipt == null) {
+  //       await Future.delayed(Duration(seconds: 2)); // Wait for 2 seconds
+  //     }
+  //   } while (receipt == null);
+  //   return txHash;
+  // }
 }
 
 Future<BigInt> getSenderContractNonce(Web3Client provider,

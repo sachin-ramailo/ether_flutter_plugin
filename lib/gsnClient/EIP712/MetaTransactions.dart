@@ -92,7 +92,7 @@ Future<Map<String, dynamic>> getMetatransactionEIP712Signature(
   final String signature = EthSigUtil.signTypedData(
     jsonData: jsonEncode(eip712Data),
     version: TypedDataVersion.V4,
-    privateKey: bytesToHex(account.privateKey.privateKey),
+    privateKey: "0x${bytesToHex(account.privateKey.privateKey)}",
   );
 
   printLog("\n\nsignature from meta txn class = $signature\n\n");
@@ -248,7 +248,7 @@ Future<GsnTransactionDetails> getExecuteMetatransactionTx(
 
   final gsnTx = GsnTransactionDetails(
     from: account.privateKey.address.hex,
-    data: bytesToHex(tx.data!),
+    data: "0x${bytesToHex(tx.data!)}",
     value: "0",
     to: tx.to!.hex,
     //TODO: Remove hardcoding
