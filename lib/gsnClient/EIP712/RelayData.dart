@@ -34,11 +34,10 @@ class RelayData {
       EthereumAddress.fromHex(forwarder),
       hexToBytes(paymasterData),
       BigInt.parse(clientId),
-
     ];
   }
 
-  Map<String,dynamic> toMap(){
+  Map<String, dynamic> toMap() {
     return {
       'maxFeePerGas': maxFeePerGas,
       'maxPriorityFeePerGas': maxPriorityFeePerGas,
@@ -50,5 +49,4 @@ class RelayData {
       'clientId': clientId,
     };
   }
-
 }
