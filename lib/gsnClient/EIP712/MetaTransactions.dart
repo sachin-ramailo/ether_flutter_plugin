@@ -96,7 +96,17 @@ Future<Map<String, dynamic>> getMetatransactionEIP712Signature(
   );
 
   printLog("\n\nsignature from meta txn class = $signature\n\n");
+  String revoered = EthSigUtil.recoverSignature(
+    signature: signature,
+    message: TypedDataUtil.hashMessage(
+      jsonData: jsonEncode(eip712Data),
+      version: TypedDataVersion.V4,
+    ),
+  );
 
+  printLog('Signature from meta tx : $signature');
+  printLog('recovered from meta tx helper= $revoered');
+  print("public key from meta tx helper=\n${account.privateKey.address.hex}");
   // get r,s,v from signature
   final signatureBytes = hexToBytes(signature);
 

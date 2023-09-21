@@ -258,7 +258,17 @@ Future<String> signRequest(
     version: TypedDataVersion.V4,
   );
 
-  printLog('Signature: $signature');
+  String revoered = EthSigUtil.recoverSignature(
+    signature: signature,
+    message: TypedDataUtil.hashMessage(
+      jsonData: jsonEncode(jsonData),
+      version: TypedDataVersion.V4,
+    ),
+  );
+
+  printLog('Signature from gsn tx helper: $signature');
+  printLog('recovered from gsn tx helper= $revoered');
+  print("public key from gsn tx helper=\n${account.privateKey.address.hex}");
 
   return signature;
 }
@@ -348,6 +358,7 @@ Future<String> handleGsnResponse(
 ) async {
   printLog("res.body  = ${res.body}");
   printLog("res.bodyBytes  = ${res.bodyBytes}");
+  printLog("res.bodyBytes in hex = ${bytesToHex(res.bodyBytes)}");
   return "TODO: return txnhash";
   // if (res.data['error'] != null) {
   //   throw {
