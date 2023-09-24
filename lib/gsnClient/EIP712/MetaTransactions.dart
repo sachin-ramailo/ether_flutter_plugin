@@ -107,8 +107,11 @@ Future<Map<String, dynamic>> getMetatransactionEIP712Signature(
   printLog('Signature from meta tx : $signature');
   printLog('recovered from meta tx helper= $revoered');
   print("public key from meta tx helper=\n${account.privateKey.address.hex}");
+
+  final cleanedSignature =
+      signature.startsWith('0x') ? signature.substring(2) : signature;
   // get r,s,v from signature
-  final signatureBytes = hexToBytes(signature);
+  final signatureBytes = hexToBytes(cleanedSignature);
 
   Map<String, dynamic> rsv = {
     'r': signatureBytes.sublist(0, 32),
