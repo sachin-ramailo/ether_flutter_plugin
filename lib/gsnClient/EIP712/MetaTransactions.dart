@@ -62,7 +62,7 @@ Map<String, dynamic> getTypedMetatransaction(MetaTransaction metaTransaction) {
   final messageData = {
     'nonce': metaTransaction.nonce,
     'from': metaTransaction.from,
-    'functionSignature': metaTransaction.functionSignature,
+    'functionSignature': '0x${bytesToHex(metaTransaction.functionSignature)}',
   };
 
   // final messageData = {
@@ -90,8 +90,8 @@ Future<Map<String, dynamic>> getMetatransactionEIP712Signature(
 ) async {
   // name and chainId to be used in EIP712
   final chainId = int.parse(config.gsn.chainId);
-  String saltHexString = '0x${chainId.toRadixString(16)}';
-  String paddedSaltHexString = saltHexString.padLeft(66, '0');
+  String saltHexString = chainId.toRadixString(16);
+  String paddedSaltHexString = '0x${saltHexString.padLeft(64, '0')}';
   printLog("paddedSaltHexString = $paddedSaltHexString");
   // typed data for signing
   final eip712Data = getTypedMetatransaction(
@@ -280,6 +280,11 @@ Future<GsnTransactionDetails> getExecuteMetatransactionTx(
   if (tx == null) {
     throw 'tx not populated';
   }
+  printLog(
+      "maxPriorityFeePerGas for gsn tx is : ${maxPriorityFeePerGas.toString()}");
+
+  printLog("maxFeePerGas for gsn tx is : ${maxFeePerGas.toString()}");
+  printLog("gas: 0x${gas.toRadixString(16)}");
 
   final gsnTx = GsnTransactionDetails(
     from: account.privateKey.address.hex,
