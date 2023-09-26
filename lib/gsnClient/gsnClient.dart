@@ -147,6 +147,7 @@ Future<String> relayTransaction(
   httpRequest['metadata']['relayRequestId'] = relayRequestId;
 
   final authHeader = {
+    'Content-Type': 'application/json', // Specify the content type as JSON
     'Authorization': 'Bearer ${config.relayerApiKey ?? ''}',
   };
 
@@ -158,10 +159,8 @@ Future<String> relayTransaction(
   printLog("end printing http request");
   final res = await http.post(
     Uri.parse('${config.gsn.relayUrl}/relay'),
-    headers: {
-      'Content-Type': 'application/json', // Specify the content type as JSON
-      ...authHeader, // Assuming authHeader is a map of headers you want to include
-    },
+    headers:
+        authHeader, // Assuming authHeader is a map of headers you want to include
     body: json.encode(httpRequest),
   );
   return handleGsnResponse(res, web3Provider);
