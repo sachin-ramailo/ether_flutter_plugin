@@ -33,32 +33,50 @@ class MetaTransaction {
 }
 
 Map<String, dynamic> getTypedMetatransaction(MetaTransaction metaTransaction) {
+  final types = {
+    'EIP712Domain': [
+      {'name': 'name', 'type': 'string'},
+      {'name': 'version', 'type': 'string'},
+      {'name': 'verifyingContract', 'type': 'address'},
+      {'name': 'salt', 'type': 'bytes32'},
+    ],
+    'MetaTransaction': [
+      {'name': 'nonce', 'type': 'uint256'},
+      {'name': 'from', 'type': 'address'},
+      {'name': 'functionSignature', 'type': 'bytes'},
+    ],
+  };
+  const primaryType = "MetaTransaction";
+  final domainSeparator = {
+    'name': metaTransaction.name,
+    'version': metaTransaction.version,
+    'verifyingContract': metaTransaction.verifyingContract,
+    'salt': metaTransaction.salt,
+  };
+  // final domainSeparator = {
+  //   'name': 'Rally Polygon',
+  //   'version': '3',
+  //   'verifyingContract': '0x1C7312Cb60b40cF586e796FEdD60Cf243286c9E9',
+  //   'salt': '0x0000000000000000000000000000000000000000000000000000000000013881'
+  // };
+  final messageData = {
+    'nonce': metaTransaction.nonce,
+    'from': metaTransaction.from,
+    'functionSignature': metaTransaction.functionSignature,
+  };
+
+  // final messageData = {
+  //   'nonce': 1,
+  //   'from': '0x9E6d844c0257E3356065cD6a3F90eE4d966F1551',
+  //   'functionSignature':
+  //       '0xa9059cbb0000000000000000000000005205bcc1852c4b626099aa7a2aff36ac3e9de83b0000000000000000000000000000000000000000000000000de0b6b3a7640000',
+  // };
+
   return {
-    'types': {
-      'EIP712Domain': [
-        {'name': 'name', 'type': 'string'},
-        {'name': 'version', 'type': 'string'},
-        {'name': 'verifyingContract', 'type': 'address'},
-        {'name': 'salt', 'type': 'string'},
-      ],
-      'MetaTransaction': [
-        {'name': 'nonce', 'type': 'uint256'},
-        {'name': 'from', 'type': 'address'},
-        {'name': 'functionSignature', 'type': 'bytes'},
-      ],
-    },
-    'domain': {
-      'name': metaTransaction.name,
-      'version': metaTransaction.version,
-      'verifyingContract': metaTransaction.verifyingContract,
-      'salt': metaTransaction.salt,
-    },
-    'primaryType': 'MetaTransaction',
-    'message': {
-      'nonce': metaTransaction.nonce,
-      'from': metaTransaction.from,
-      'functionSignature': metaTransaction.functionSignature,
-    },
+    'types': types,
+    'primaryType': primaryType,
+    'domain': domainSeparator,
+    'message': messageData,
   };
 }
 
@@ -93,6 +111,8 @@ Future<Map<String, dynamic>> getMetatransactionEIP712Signature(
     jsonData: jsonEncode(eip712Data),
     version: TypedDataVersion.V4,
     privateKey: "0x${bytesToHex(account.privateKey.privateKey)}",
+    // privateKey:
+    //     "0xb0239b0afcbb5d7c36dfed696b621fc428c2ad3094c28e4a4a68a1d983cc679d",
   );
 
   printLog("\n\nsignature from meta txn class = $signature\n\n");
@@ -140,6 +160,7 @@ Future<bool> hasExecuteMetaTransaction(
   Web3Client provider,
 ) async {
   try {
+    printLog("contractAddress from meta tx  = $contractAddress");
     final token = erc20(contractAddress);
     final nameCall = await provider
         .call(contract: token, function: token.function('name'), params: []);
@@ -197,6 +218,7 @@ Future<GsnTransactionDetails> getExecuteMetatransactionTx(
 ) async {
   //TODO: Once things are stable, think about refactoring
   // to avoid code duplication
+  printLog("contractAddress from meta tx  = $contractAddress");
   final token = erc20(contractAddress);
 
   final nameCallResult = await provider
