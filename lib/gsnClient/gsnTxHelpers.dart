@@ -357,8 +357,8 @@ Future<String> handleGsnResponse(
   Web3Client ethClient,
 ) async {
   printLog("res.body  = ${res.body}");
-  printLog("res.bodyBytes  = ${res.bodyBytes}");
-  printLog("res.bodyBytes in hex = ${bytesToHex(res.bodyBytes)}");
+  // printLog("res.bodyBytes  = ${res.bodyBytes}");
+  // printLog("res.bodyBytes in hex = ${bytesToHex(res.bodyBytes)}");
   return "TODO: return txnhash";
   // if (res.data['error'] != null) {
   //   throw {
