@@ -109,7 +109,7 @@ class NetworkImpl extends Network {
     final provider = getEthClientForURL(network.gsn.rpcUrl);
 
     GsnTransactionDetails? transferTx;
-    metaTxMethod = MetaTxMethod.ExecuteMetaTransaction;
+    // metaTxMethod = MetaTxMethod.ExecuteMetaTransaction;
     if (metaTxMethod != null &&
         (metaTxMethod == MetaTxMethod.Permit ||
             metaTxMethod == MetaTxMethod.ExecuteMetaTransaction)) {

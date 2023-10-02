@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_sdk/account.dart';
+import 'package:flutter_sdk/gsnClient/utils.dart';
 import 'package:flutter_sdk/network.dart';
 import 'package:flutter_sdk/utils/constants.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -61,7 +62,8 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
       loading = true;
     });
 
-    await RlyNetwork.transfer(transferAddress, double.parse(transferBalance));
+    await RlyNetwork.transfer(transferAddress, double.parse(transferBalance),
+        metaTxMethod: MetaTxMethod.ExecuteMetaTransaction);
 
     fetchBalance();
 
