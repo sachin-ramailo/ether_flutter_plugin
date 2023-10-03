@@ -356,27 +356,26 @@ Future<String> handleGsnResponse(
   Response res,
   Web3Client ethClient,
 ) async {
-  printLog("res.body  = ${res.body}");
-  // printLog("res.bodyBytes  = ${res.bodyBytes}");
-  // printLog("res.bodyBytes in hex = ${bytesToHex(res.bodyBytes)}");
-  return "TODO: return txnhash";
-  // if (res.data['error'] != null) {
-  //   throw {
-  //     'message': 'RelayError',
-  //     'details': res.data['error'],
-  //   };
-  // } else {
-  //   final txHash = keccak256(res.data['signedTx']).toString();
-  //   // Poll for the transaction receipt until it's confirmed
-  //   TransactionReceipt? receipt;
-  //   do {
-  //     receipt = await ethClient.getTransactionReceipt(txHash);
-  //     if (receipt == null) {
-  //       await Future.delayed(Duration(seconds: 2)); // Wait for 2 seconds
-  //     }
-  //   } while (receipt == null);
-  //   return txHash;
-  // }
+  // printLog("res.body  = ${res.body}");
+  Map<String, dynamic> responseMap = jsonDecode(res.body);
+  if (responseMap['error'] != null) {
+    throw {
+      'message': 'RelayError',
+      'details': responseMap['error'],
+    };
+  } else {
+    final txHash =
+        "0x${bytesToHex(keccak256(hexToBytes(responseMap['signedTx'])))}";
+    // Poll for the transaction receipt until it's confirmed
+    TransactionReceipt? receipt;
+    do {
+      receipt = await ethClient.getTransactionReceipt(txHash);
+      if (receipt == null) {
+        await Future.delayed(const Duration(seconds: 2)); // Wait for 2 seconds
+      }
+    } while (receipt == null);
+    return txHash;
+  }
 }
 
 Future<BigInt> getSenderContractNonce(Web3Client provider,

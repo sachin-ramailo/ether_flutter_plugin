@@ -62,8 +62,10 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
       loading = true;
     });
 
-    await RlyNetwork.transfer(transferAddress, double.parse(transferBalance),
+    final txHash = await RlyNetwork.transfer(
+        transferAddress, double.parse(transferBalance),
         metaTxMethod: MetaTxMethod.ExecuteMetaTransaction);
+    printLog("Txn hash = $txHash");
 
     fetchBalance();
 
