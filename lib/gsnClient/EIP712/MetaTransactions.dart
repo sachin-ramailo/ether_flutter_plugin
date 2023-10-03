@@ -268,7 +268,7 @@ Future<GsnTransactionDetails> getExecuteMetatransactionTx(
   final gas = await provider.estimateGas(
     sender: account.privateKey.address,
     data: tx.data,
-    to: EthereumAddress.fromHex(destinationAddress),
+    to: token.address,
   );
   printLog("gas estimate: 0x${gas.toRadixString(16)}");
 
