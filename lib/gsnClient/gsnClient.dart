@@ -168,6 +168,7 @@ Future<String> relayTransaction(
 
 Map<String, String> authHeader(NetworkConfig config) {
   return {
+    'Content-Type': 'application/json',
     'Authorization': 'Bearer ${config.relayerApiKey ?? ''}',
   };
 }
@@ -181,6 +182,11 @@ void setGasFeesForTransaction(
 
   final paddedMaxPriority = (serverSuggestedMinPriorityFeePerGas * 1.4).round();
   transaction.maxPriorityFeePerGas = paddedMaxPriority.toString();
+  printLog(
+      "serverSuggestedMinPriorityFeePerGas = $serverSuggestedMinPriorityFeePerGas");
+  printLog("paddedMaxPriority  = $paddedMaxPriority");
+  printLog(
+      "serverConfigUpdate.maxMaxFeePerGas  = ${serverConfigUpdate.maxMaxFeePerGas}");
 
   // Special handling for mumbai because of quirk with gas estimate returned by GSN for mumbai
   if (serverConfigUpdate.chainId == '80001') {
@@ -188,6 +194,7 @@ void setGasFeesForTransaction(
   } else {
     transaction.maxFeePerGas = serverConfigUpdate.maxMaxFeePerGas;
   }
+  printLog(' transaction.maxFeePerGas =  ${transaction.maxFeePerGas}');
 }
 
 class GsnServerConfigPayload {
