@@ -6,7 +6,7 @@ import 'package:flutter_sdk/utils/constants.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:web3dart/web3dart.dart';
 
-final RlyNetwork = RlyMumbaiNetwork;
+final RlyNetwork = SaveTokenPlygonNetwork;
 
 class AccountOverviewScreen extends StatefulWidget {
   final String rlyAccount;
@@ -20,7 +20,7 @@ class AccountOverviewScreen extends StatefulWidget {
 class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
   bool loading = false;
   double? balance;
-  String transferBalance = '1';
+  String transferBalance = '0.1';
   String transferAddress = '0x5205BcC1852c4b626099aa7A2AFf36Ac3e9dE83b';
   String? mnemonic;
 
@@ -30,6 +30,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
     });
 
     double bal = await RlyNetwork.getBalance();
+    printLog("The available balance - $bal");
     // EtherAmount amt = await AccountsUtil.getInstance().getBalance();
     setState(() {
       balance = bal;
@@ -43,8 +44,11 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
     fetchBalance();
     // RlyNetwork.setApiKey(
     //     "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOjEzNX0.wqnX-E-KRvzqLgIBAw6RV-BT1puWuZgVdAsqxoU1nL2z8hxTkT4OlH7G6Okv9l3qRMLxMbkORg14XTko-gJW1A");
+    // RlyNetwork.setApiKey(
+    //     "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOjkzfQ.PgErzRN88Sz07OKp9aj0cUxCap_chaqTsDzgkaIc7NMC_WSPeL4HUlmSb_spHe5N_Gk7EYsF-1QFXg-rIp7ETA");
+    //these are polygon main net keys
     RlyNetwork.setApiKey(
-        "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOjkzfQ.PgErzRN88Sz07OKp9aj0cUxCap_chaqTsDzgkaIc7NMC_WSPeL4HUlmSb_spHe5N_Gk7EYsF-1QFXg-rIp7ETA");
+        "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOjE3Nn0.4IPlx-ONjKNrOp1qEYMWF9tJDmWKKtcb7IzEXavljI5hfOs40mu7gOUBjOrikOaxeWYcHE6oBXwTQDhZhfgePg");
   }
 
   void claimRlyTokens() async {
@@ -63,8 +67,9 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
     });
 
     final txHash = await RlyNetwork.transfer(
-        transferAddress, double.parse(transferBalance),
-        metaTxMethod: MetaTxMethod.ExecuteMetaTransaction);
+      transferAddress, double.parse(transferBalance),
+      // metaTxMethod: MetaTxMethod.ExecuteMetaTransaction
+    );
     printLog("Txn hash = $txHash");
 
     fetchBalance();
@@ -136,7 +141,7 @@ class _AccountOverviewScreenState extends State<AccountOverviewScreen> {
                       ElevatedButton(
                         onPressed: () async {
                           await launchUrl(Uri.parse(
-                              'https://mumbai.polygonscan.com/address/${widget.rlyAccount}'));
+                              'https://polygonscan.com/address/${widget.rlyAccount}'));
                         },
                         child: Text('View on Polygon'),
                       ),

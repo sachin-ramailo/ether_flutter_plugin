@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:eth_sig_util/eth_sig_util.dart';
 import 'package:eth_sig_util/util/utils.dart';
@@ -7,6 +8,7 @@ import 'package:web3dart/web3dart.dart';
 
 import '../../contracts/erc20.dart';
 import '../../network_config/network_config.dart';
+import '../gsnTxHelpers.dart';
 import '../utils.dart';
 
 class Permit {
@@ -45,6 +47,13 @@ Map<String, dynamic> getTypedPermitTransaction(Permit permit) {
         {'name': 'nonce', 'type': 'uint256'},
         {'name': 'deadline', 'type': 'uint256'},
       ],
+      'EIP712Domain': [
+        {'name': 'name', 'type': 'string'},
+        {'name': 'version', 'type': 'string'},
+        {"name": "chainId", "type": "uint256"},
+        {'name': 'verifyingContract', 'type': 'address'},
+        {'name': 'salt', 'type': 'bytes32'},
+      ],
     },
     'primaryType': 'Permit',
     'domain': {
@@ -72,7 +81,7 @@ Future<Map<String, dynamic>> getPermitEIP712Signature(
   int nonce,
   BigInt amount,
   BigInt deadline,
-  String salt,
+  Uint8List salt,
 ) async {
   // chainId to be used in EIP712
   final chainId = config.gsn.chainId;
@@ -89,22 +98,29 @@ Future<Map<String, dynamic>> getPermitEIP712Signature(
       value: amount.toString(),
       nonce: nonce.toString(),
       deadline: deadline.toString(),
-      salt: salt,
+      salt: "0x${bytesToHex(salt)}",
     ),
   );
 
   // signature for metatransaction
   final String signature = EthSigUtil.signTypedData(
-      jsonData: jsonEncode(eip712Data), version: TypedDataVersion.V1);
+    jsonData: jsonEncode(eip712Data),
+    version: TypedDataVersion.V4,
+    privateKey: "0x${bytesToHex(account.privateKey.privateKey)}",
+  );
+  printLog('Signature from Permit tx : $signature');
 
-  String r = signature.substring(0, 66); // 66 hex characters for r
-  String s = signature.substring(66, 130); // 66 hex characters for s
-  int v = int.parse(signature.substring(130, 132),
-      radix: 16); // 2 hex characters for v
+  final cleanedSignature =
+      signature.startsWith('0x') ? signature.substring(2) : signature;
+  final signatureBytes = hexToBytes(cleanedSignature);
 
-  printLog("r = $r");
-  printLog("s = $s");
-  printLog("v = $v");
+  final r = signatureBytes.sublist(0, 32);
+  final s = signatureBytes.sublist(32, 64);
+  int v = signatureBytes[64];
+
+  printLog("r from permit txn= $r");
+  printLog("s from permit txn= $s");
+  printLog("v from permit txn= $v");
 
   return {
     'r': r,
@@ -130,7 +146,8 @@ Future<bool> hasPermit(
         contract: token,
         function: token.function('nonces'),
         params: [account.privateKey.address]);
-    final nonce = noncesFunctionCall[0];
+    final nonce = noncesFunctionCall[0] as BigInt;
+    final nonceInt = nonce.toInt();
 
     final deadline = await getPermitDeadline(provider);
     final eip712Domain = await provider.call(
@@ -140,26 +157,28 @@ Future<bool> hasPermit(
         /*5 is hardcoded here because in the erc20 json,
     the salt appears on 5th index in outputs
     of function eip712Domain*/
-        eip712Domain[5] as String;
+        eip712Domain[5];
 
+    //TODO: the amount can be in points eg: 0.5 fix it once permit txn start going through
+    int amt = amount.toInt();
     final decimalAmount =
-        EtherAmount.fromBase10String(EtherUnit.ether, amount.toString());
-
+        EtherAmount.fromBase10String(EtherUnit.ether, amt.toString());
     final signature = await getPermitEIP712Signature(
       account,
       name,
       contractAddress,
       config,
-      nonce,
+      nonceInt,
       decimalAmount.getInWei,
       deadline,
       salt,
     );
     provider
         .call(contract: token, function: token.function('name'), params: []);
+
     await _estimateGasForPermit(
       token,
-      EthereumAddress.fromHex(account.privateKey.address.hex),
+      account.privateKey.address,
       EthereumAddress.fromHex(config.gsn.paymasterAddress),
       decimalAmount.getInWei,
       deadline,
@@ -176,48 +195,43 @@ Future<bool> hasPermit(
   }
 }
 
-_estimateGasForPermit(
+Future<BigInt> _estimateGasForPermit(
     DeployedContract token,
     EthereumAddress accountAddress,
     EthereumAddress paymasterAddress,
     BigInt decimalAmount,
     BigInt deadline,
     int v,
-    String r,
-    String s,
+    Uint8List r,
+    Uint8List s,
     Web3Client provider,
     EthereumAddress fromAddress) async {
-  final function = token.function('permit');
-  final args = [
-    accountAddress,
-    paymasterAddress,
-    decimalAmount,
-    deadline,
-    v,
-    r,
-    s,
-  ];
+  try {
+    final function = token.function('permit');
+    final args = [
+      accountAddress,
+      paymasterAddress,
+      decimalAmount,
+      deadline,
+      BigInt.from(v),
+      r,
+      s
+    ];
 
-  // Create a list of arguments to pass to the function
-  final data = function.encodeCall(args);
-  // Prepare the transaction
-  final transaction = Transaction(
-    from: fromAddress,
-    to: token.address,
-    gasPrice: EtherAmount.zero(), // Set the gas price to zero to estimate gas
-    data: data,
-  );
-  // Get the Web3Client instance to estimate the gas
+    // Create a list of arguments to pass to the function
+    final data = function.encodeCall(args);
 
 // Estimate the gas required for the transaction
-  final gasEstimate = await provider.estimateGas(
-    gasPrice: EtherAmount.zero(),
-    to: token.address,
-    data: data,
-    sender: fromAddress,
-  );
+    final gasEstimate = await provider.estimateGas(
+      sender: fromAddress,
+      data: data,
+      to: token.address,
+    );
 
-  return gasEstimate;
+    return gasEstimate;
+  } catch (e) {
+    rethrow;
+  }
 }
 
 Future<GsnTransactionDetails> getPermitTx(
@@ -232,16 +246,16 @@ Future<GsnTransactionDetails> getPermitTx(
   final noncesCallResult = await provider.call(
       contract: token,
       function: token.function("nonces"),
-      params: [EthereumAddress.fromHex(account.privateKey.address.hex)]);
+      params: [account.privateKey.address]);
 
-  final name = token.abi.name;
-  final nonce = noncesCallResult[0];
-  // final nonce = await provider.getTransactionCount(
-  //     EthereumAddress.fromHex(account.privateKey.address.hex));
+  final nameCall = await provider
+      .call(contract: token, function: token.function('name'), params: []);
+  final name = nameCall.first;
+  final nonce = noncesCallResult[0] as BigInt;
+
   final decimalsCallResult = await provider
       .call(contract: token, function: token.function("decimals"), params: []);
   final decimals = decimalsCallResult[0];
-  printLog("decimals units  =${bytesToHex(decimals)}");
 
   final deadline = await getPermitDeadline(provider);
   final eip712DomainCallResult = await provider.call(
@@ -251,10 +265,10 @@ Future<GsnTransactionDetails> getPermitTx(
       /*5 is hardcoded here because in the erc20 json,
     the salt appears on 5th index in outputs
     of function eip712Domain*/
-      eip712DomainCallResult[5] as String;
+      eip712DomainCallResult[5];
 
   final decimalAmount =
-      EtherAmount.fromBase10String(EtherUnit.ether, amount.toString());
+      parseUnits(amount.toString(), int.parse(decimals.toString()));
 
   final signature = await getPermitEIP712Signature(
     account,
@@ -262,16 +276,29 @@ Future<GsnTransactionDetails> getPermitTx(
     contractAddress,
     config,
     nonce.toInt(),
-    decimalAmount.getInWei,
+    decimalAmount,
     deadline,
     salt,
   );
 
-  final tx = await _estimateGasForPermit(
+  final tx = Transaction.callContract(
+      contract: token,
+      function: token.function('permit'),
+      parameters: [
+        account.privateKey.address,
+        EthereumAddress.fromHex(config.gsn.paymasterAddress),
+        decimalAmount,
+        deadline,
+        BigInt.from(signature['v']),
+        signature['r'],
+        signature['s'],
+      ]);
+
+  final gas = await _estimateGasForPermit(
     token,
-    EthereumAddress.fromHex(account.privateKey.address.hex),
+    account.privateKey.address,
     EthereumAddress.fromHex(config.gsn.paymasterAddress),
-    decimalAmount.getInWei,
+    decimalAmount,
     deadline,
     signature['v'],
     signature['r'],
@@ -280,15 +307,19 @@ Future<GsnTransactionDetails> getPermitTx(
     EthereumAddress.fromHex(account.privateKey.address.hex),
   );
 
-  final fromTx = await provider
-      .call(contract: token, function: token.function('transferFrom'), params: [
-    EthereumAddress.fromHex(account.privateKey.address.hex),
-    destinationAddress,
-    decimalAmount.getInWei,
-  ]);
+  final fromTx = Transaction.callContract(
+      contract: token,
+      function: token.function('transferFrom'),
+      parameters: [
+        account.privateKey.address,
+        destinationAddress,
+        decimalAmount,
+      ]);
+
+  final fromTxDataInString = bytesToHex(fromTx.data!);
 
   final paymasterData =
-      '0x${token.address.hex.replaceFirst('0x', '')}${fromTx[1].replaceFirst('0x', '')}';
+      '0x${token.address.hex.replaceFirst('0x', '')}${fromTxDataInString.replaceFirst('0x', '')}';
   //following code is inspired from getFeeData method of
   //abstract-provider of ethers js library
   final EtherAmount gasPrice = await provider.getGasPrice();
@@ -298,10 +329,10 @@ Future<GsnTransactionDetails> getPermitTx(
 
   final gsnTx = GsnTransactionDetails(
     from: account.privateKey.address.hex,
-    data: tx.data,
+    data: "0x${bytesToHex(tx.data!)}",
     value: "0",
-    to: tx.to.hex,
-    gas: tx.gasPrice.getInWei,
+    to: tx.to!.hex,
+    gas: "0x${gas.toRadixString(16)}",
     maxFeePerGas: maxFeePerGas.toString(),
     maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
     paymasterData: paymasterData,
