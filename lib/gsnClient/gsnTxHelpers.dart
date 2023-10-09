@@ -94,6 +94,7 @@ Future<String> estimateCalldataCostForRequest(RelayRequest relayRequestOriginal,
   final signature = '0x${List.filled(65, 'ff').join()}';
   final approvalData =
       '0x${List.filled(config.maxApprovalDataLength, 'ff').join()}';
+  printLog("approvalData in GsnTxHelper = $approvalData");
 
   final relayHub = relayHubContract(config.relayHubAddress);
   // Estimate the gas cost for the relayCall function call
@@ -103,6 +104,8 @@ Future<String> estimateCalldataCostForRequest(RelayRequest relayRequestOriginal,
   final function = relayHub.function('relayCall');
   printLog(
       "BigInt.parse(maxAcceptanceBudget.substring(2), radix: 16), = ${BigInt.parse(maxAcceptanceBudget.substring(2), radix: 16)}");
+  printLog("Approval data from gsnTxHelper = $approvalData");
+
   // Transaction.callContract(contract: contract, function: function, parameters: parameters)
   final tx = Transaction.callContract(
       contract: relayHub,
